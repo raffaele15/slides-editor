@@ -805,7 +805,9 @@ function loadHTML(src) {
     return;
   }
   try {
-    SLIDES = JSON.parse(match[1]);
+    // Use Function() instead of JSON.parse() to support JS-syntax SLIDES arrays
+    // (template literals, // comments, trailing commas, etc.)
+    SLIDES = (new Function('return ' + match[1]))();
     // Ensure all slides have canvasElements
     SLIDES.forEach(s => {
       if (!s.canvasElements) s.canvasElements = [];
