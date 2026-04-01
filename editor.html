@@ -160,6 +160,25 @@ body::before {
 }
 .st-canvas-badge.has-canvas { display: block; }
 
+/* Slide thumb action buttons */
+.st-actions {
+  display: none;
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  align-items: center; gap: 2px;
+  background: rgba(4,13,28,0.92);
+  border: 1px solid var(--navy-600);
+  border-radius: 5px; padding: 2px 3px;
+}
+.slide-thumb:hover .st-actions { display: flex; }
+.st-act {
+  background: none; border: none; color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  line-height: 1; padding: 2px 4px; cursor: pointer;
+  border-radius: 3px; transition: all 0.12s;
+}
+.st-act:hover { color: var(--white); background: rgba(37,88,168,0.3); }
+.st-act.del:hover { color: var(--red); background: var(--red-dim); }
+
 #sidebar-footer {
   padding: 10px;
   border-top: 1px solid var(--navy-700);
@@ -314,15 +333,26 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
 
 /* Crop handles */
 .crop-handle {
-  position: absolute; width: 10px; height: 10px;
-  background: var(--orange); border: 1.5px solid var(--navy-900);
-  border-radius: 1px; z-index: 26; display: none;
+  position: absolute; width: 14px; height: 14px;
+  background: var(--orange); border: 2px solid var(--navy-900);
+  border-radius: 3px; z-index: 26; display: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 .canvas-element.cropping .crop-handle { display: block; cursor: crosshair; }
-.crop-handle.cn { top: -5px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
-.crop-handle.cs { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
-.crop-handle.cw { left: -5px; top: 50%; transform: translateY(-50%); cursor: w-resize; }
-.crop-handle.ce { right: -5px; top: 50%; transform: translateY(-50%); cursor: e-resize; }
+.canvas-element.cropping .crop-handle:hover { background: #ffb06a; transform: scale(1.2); }
+.crop-handle.cn { top: -7px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+.crop-handle.cs { bottom: -7px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+.crop-handle.cw { left: -7px; top: 50%; transform: translateY(-50%); cursor: w-resize; }
+.crop-handle.ce { right: -7px; top: 50%; transform: translateY(-50%); cursor: e-resize; }
+.canvas-element.cropping .crop-handle.cn:hover { transform: translateX(-50%) scale(1.2); }
+.canvas-element.cropping .crop-handle.cs:hover { transform: translateX(-50%) scale(1.2); }
+.canvas-element.cropping .crop-handle.cw:hover { transform: translateY(-50%) scale(1.2); }
+.canvas-element.cropping .crop-handle.ce:hover { transform: translateY(-50%) scale(1.2); }
+/* Crop mode outline */
+.canvas-element.cropping .img-el-wrap {
+  outline: 2px dashed var(--orange);
+  outline-offset: 1px;
+}
 
 /* Text box element */
 .text-box-el {
@@ -335,6 +365,57 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
   line-height: 1.4;
 }
 .text-box-el[contenteditable="true"] { cursor: text; }
+
+/* Bullet list canvas element */
+.bullet-list-el {
+  padding: 6px 10px;
+  min-height: 40px;
+  pointer-events: none;
+}
+.bullet-list-el ul {
+  list-style: none; padding: 0; margin: 0;
+}
+.bullet-list-el ul li {
+  padding: 4px 0 4px 20px;
+  position: relative;
+  border-bottom: 1px solid rgba(37,88,168,0.2);
+  font-family: 'Source Serif 4', serif;
+  line-height: 1.55;
+  color: var(--blue-100);
+}
+.bullet-list-el ul li:last-child { border-bottom: none; }
+.bullet-list-el ul li::before {
+  content: '—';
+  position: absolute; left: 0;
+  color: var(--gold);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+}
+/* Edit mode: make each li editable */
+.bullet-list-el.editing ul li {
+  pointer-events: all;
+  cursor: text;
+  outline: none;
+  background: rgba(62,207,142,0.04);
+  border-bottom-color: rgba(37,88,168,0.35);
+}
+.bullet-list-el.editing ul li:focus {
+  background: rgba(62,207,142,0.08);
+  outline: 1px solid rgba(62,207,142,0.3);
+  border-radius: 2px;
+}
+.bullet-list-add-btn {
+  display: none;
+  margin-top: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.08em;
+  color: var(--green); background: none;
+  border: 1px dashed rgba(62,207,142,0.35);
+  border-radius: 4px; padding: 3px 10px;
+  cursor: pointer; width: 100%;
+}
+.bullet-list-el.editing .bullet-list-add-btn { display: block; }
+
 
 /* Image element */
 .img-el-wrap {
@@ -654,6 +735,10 @@ textarea.meta-input { height: 70px; }
           <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
           Text
         </button>
+        <button class="tr-btn" id="tool-bullet" title="Add Bullet List (B)">
+          <svg viewBox="0 0 24 24"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><line x1="4" y1="6" x2="4.01" y2="6"/><line x1="4" y1="12" x2="4.01" y2="12"/><line x1="4" y1="18" x2="4.01" y2="18"/></svg>
+          Bullet List
+        </button>
         <button class="tr-btn" id="tool-image" title="Add Image (I)">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           Image
@@ -968,16 +1053,59 @@ function renderSidebar() {
     div.dataset.idx = i;
     const hasCanvas = s.canvasElements && s.canvasElements.length > 0;
     div.innerHTML = `
-      <div class="st-num">0${i < 9 ? '' : ''}${i + 1}</div>
+      <div class="st-num">${String(i + 1).padStart(2, '0')}</div>
       <div class="st-info">
         <div class="st-title">${stripHTML(s.title || '—')}</div>
         <div class="st-phase">Ph ${s.phase} · ${s.type}</div>
       </div>
       <div class="st-canvas-badge ${hasCanvas ? 'has-canvas' : ''}"></div>
+      <div class="st-actions">
+        <button class="st-act" data-act="up" title="Move up">↑</button>
+        <button class="st-act" data-act="down" title="Move down">↓</button>
+        <button class="st-act del" data-act="del" title="Delete slide">✕</button>
+      </div>
     `;
-    div.addEventListener('click', () => selectSlide(i));
+    div.addEventListener('click', e => {
+      if (e.target.closest('.st-actions')) return;
+      selectSlide(i);
+    });
+    div.querySelectorAll('.st-act').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        handleSlideAction(btn.dataset.act, i);
+      });
+    });
     list.appendChild(div);
   });
+}
+
+function handleSlideAction(act, idx) {
+  if (act === 'del') {
+    if (SLIDES.length <= 1) { showToast('Cannot delete the only slide', false); return; }
+    if (!confirm('Delete slide ' + (idx + 1) + ': "' + stripHTML(SLIDES[idx].title || '') + '"?')) return;
+    SLIDES.splice(idx, 1);
+    const newIdx = Math.min(idx, SLIDES.length - 1);
+    currentSlideIdx = newIdx;
+    renderSidebar();
+    renderTimeline();
+    selectSlide(newIdx);
+    markUnsaved();
+    showToast('Slide deleted', true);
+  } else if (act === 'up' && idx > 0) {
+    [SLIDES[idx - 1], SLIDES[idx]] = [SLIDES[idx], SLIDES[idx - 1]];
+    currentSlideIdx = idx - 1;
+    renderSidebar();
+    renderTimeline();
+    selectSlide(idx - 1);
+    markUnsaved();
+  } else if (act === 'down' && idx < SLIDES.length - 1) {
+    [SLIDES[idx], SLIDES[idx + 1]] = [SLIDES[idx + 1], SLIDES[idx]];
+    currentSlideIdx = idx + 1;
+    renderSidebar();
+    renderTimeline();
+    selectSlide(idx + 1);
+    markUnsaved();
+  }
 }
 
 function stripHTML(h) {
@@ -1054,19 +1182,22 @@ function renderCanvasElements() {
 
   s.canvasElements.forEach((cel, i) => {
     if (cel.kind === 'text') createTextDOMElement(cel, i);
+    else if (cel.kind === 'bullet') createBulletListElement(cel, i);
     else if (cel.kind === 'image') createImageDOMElement(cel, i);
     else if (['rect','ellipse','line','arrow'].includes(cel.kind)) createSVGShape(cel, i);
   });
 }
 
 function saveCurrentCanvas() {
-  // Sync any text content back to SLIDES
   elementsContainer.querySelectorAll('.canvas-element[data-idx]').forEach(el => {
     const idx = parseInt(el.dataset.idx);
     const cel = SLIDES[currentSlideIdx].canvasElements[idx];
-    if (cel && cel.kind === 'text') {
+    if (!cel) return;
+    if (cel.kind === 'text') {
       const tb = el.querySelector('.text-box-el');
       if (tb) cel.content = tb.innerHTML;
+    } else if (cel.kind === 'bullet') {
+      syncBulletFromDOM(el, idx);
     }
   });
 }
@@ -1097,6 +1228,170 @@ function createTextDOMElement(cel, idx) {
   `;
   initDOMElement(wrapper, idx);
   elementsContainer.appendChild(wrapper);
+}
+
+// ── Bullet List DOM Element ──
+function buildBulletListHTML(cel) {
+  const items = cel.items || ['Bullet point'];
+  const fontSize = cel.fontSize || 14;
+  const color = cel.color || '#b4d0f4';
+  const lisHTML = items.map(text =>
+    `<li contenteditable="false" style="font-size:${fontSize}px;color:${color}">${text}</li>`
+  ).join('');
+  return `<ul>${lisHTML}</ul><button class="bullet-list-add-btn" type="button">+ Add bullet</button>`;
+}
+
+function createBulletListElement(cel, idx) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'canvas-element';
+  wrapper.dataset.idx = idx;
+  wrapper.dataset.kind = 'bullet';
+  wrapper.style.cssText = `left:${cel.x}px;top:${cel.y}px;width:${cel.w || 280}px;min-height:40px;`;
+
+  wrapper.innerHTML = `
+    <div class="el-border"></div>
+    <div class="el-actions">
+      <span style="font-size:8px;color:var(--dim);padding:0 4px;letter-spacing:0.05em">dbl-click to edit</span>
+      <div class="el-act-sep"></div>
+      <button class="el-act-btn" data-act="front">Front</button>
+      <button class="el-act-btn" data-act="back">Back</button>
+      <div class="el-act-sep"></div>
+      <button class="el-act-btn del" data-act="delete">Delete</button>
+    </div>
+    <div class="resize-handle nw" data-dir="nw"></div>
+    <div class="resize-handle ne" data-dir="ne"></div>
+    <div class="resize-handle sw" data-dir="sw"></div>
+    <div class="resize-handle se" data-dir="se"></div>
+    <div class="bullet-list-el">${buildBulletListHTML(cel)}</div>
+  `;
+
+  const bll = wrapper.querySelector('.bullet-list-el');
+
+  // Double-click → enter editing mode
+  wrapper.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    bll.classList.add('editing');
+    bll.querySelectorAll('li').forEach(li => {
+      li.contentEditable = 'true';
+    });
+    // Focus the clicked li or first
+    const target = e.target.closest('li');
+    if (target) { target.focus(); placeCaret(target); }
+    else { const first = bll.querySelector('li'); if (first) { first.focus(); placeCaret(first); } }
+    selectDOMEl(wrapper, idx);
+  });
+
+  // Add bullet button
+  bll.querySelector('.bullet-list-add-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    const cel = SLIDES[currentSlideIdx].canvasElements[idx];
+    cel.items.push('New bullet');
+    syncBulletFromDOM(wrapper, idx); // save current edits first
+    renderCanvasElements();
+    // Re-enter editing on new element
+    const newWrapper = elementsContainer.querySelector(`[data-idx="${idx}"]`);
+    if (newWrapper) {
+      const newBll = newWrapper.querySelector('.bullet-list-el');
+      newBll.classList.add('editing');
+      newBll.querySelectorAll('li').forEach(li => li.contentEditable = 'true');
+      const lis = newBll.querySelectorAll('li');
+      const last = lis[lis.length - 1];
+      if (last) { last.focus(); document.execCommand('selectAll'); }
+      selectDOMEl(newWrapper, idx);
+    }
+    markUnsaved();
+  });
+
+  // Save on blur of any li
+  bll.addEventListener('focusout', e => {
+    // Small delay so clicking the add-btn doesn't prematurely save+re-render
+    setTimeout(() => {
+      if (bll.contains(document.activeElement)) return;
+      bll.classList.remove('editing');
+      bll.querySelectorAll('li').forEach(li => { li.contentEditable = 'false'; });
+      syncBulletFromDOM(wrapper, idx);
+      markUnsaved();
+    }, 150);
+  });
+
+  // Delete empty li on Backspace
+  bll.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // Insert new li after current
+      const li = e.target.closest('li');
+      if (!li) return;
+      const newLi = document.createElement('li');
+      const cel = SLIDES[currentSlideIdx].canvasElements[idx];
+      newLi.style.cssText = `font-size:${cel.fontSize||14}px;color:${cel.color||'#b4d0f4'}`;
+      newLi.contentEditable = 'true';
+      newLi.textContent = '';
+      li.after(newLi);
+      newLi.focus();
+    }
+    if (e.key === 'Backspace') {
+      const li = e.target.closest('li');
+      if (!li) return;
+      const lis = bll.querySelectorAll('li');
+      if (li.textContent === '' && lis.length > 1) {
+        e.preventDefault();
+        const prev = li.previousElementSibling;
+        li.remove();
+        if (prev) { prev.focus(); placeCaret(prev); }
+      }
+    }
+  });
+
+  initDOMElement(wrapper, idx);
+  elementsContainer.appendChild(wrapper);
+}
+
+function syncBulletFromDOM(wrapper, idx) {
+  const cel = SLIDES[currentSlideIdx].canvasElements[idx];
+  if (!cel) return;
+  cel.x = parseInt(wrapper.style.left) || 0;
+  cel.y = parseInt(wrapper.style.top) || 0;
+  cel.w = wrapper.offsetWidth;
+  cel.h = wrapper.offsetHeight;
+  const lis = wrapper.querySelectorAll('.bullet-list-el li');
+  cel.items = Array.from(lis).map(li => li.textContent.trim()).filter(t => t);
+  if (!cel.items.length) cel.items = [''];
+}
+
+function placeCaret(el) {
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function addBulletList(e) {
+  const p = getStageCoords(e);
+  const idx = SLIDES[currentSlideIdx].canvasElements.length;
+  const cel = {
+    kind: 'bullet',
+    x: p.x - 10, y: p.y - 10,
+    w: 300, h: 80,
+    items: ['First bullet point', 'Second bullet point', 'Third bullet point'],
+    fontSize: 14,
+    color: '#b4d0f4'
+  };
+  SLIDES[currentSlideIdx].canvasElements.push(cel);
+  renderCanvasElements();
+  const wrapper = elementsContainer.querySelector(`[data-idx="${idx}"]`);
+  if (wrapper) {
+    selectDOMEl(wrapper, idx);
+    // Auto-enter edit mode
+    const bll = wrapper.querySelector('.bullet-list-el');
+    bll.classList.add('editing');
+    bll.querySelectorAll('li').forEach(li => li.contentEditable = 'true');
+    const first = bll.querySelector('li');
+    if (first) { first.focus(); document.execCommand('selectAll'); }
+  }
+  renderSidebar(); markUnsaved();
+  setTool('select');
 }
 
 // ── Image DOM Element ──
@@ -1216,9 +1511,12 @@ function initDOMElement(wrapper, idx) {
     h.addEventListener('mousedown', e => { e.stopPropagation(); startResize(e, wrapper, idx, h.dataset.dir); });
   });
 
-  // Crop handles (images)
+  // Crop handles (images) — mousedown starts crop drag
   wrapper.querySelectorAll('.crop-handle').forEach(h => {
-    h.addEventListener('mousedown', e => { e.stopPropagation(); startCrop(e, wrapper, idx, h.dataset.dir); });
+    h.addEventListener('mousedown', e => {
+      e.stopPropagation();
+      startCrop(e, wrapper, idx, h.dataset.dir);
+    });
   });
 
   // Text double-click
@@ -1254,8 +1552,19 @@ function handleElementAction(act, wrapper, idx) {
     const tb = wrapper.querySelector('.text-box-el');
     if (tb) { tb.setAttribute('contenteditable','true'); tb.focus(); }
   } else if (act === 'crop') {
-    wrapper.classList.toggle('cropping');
-    wrapper.querySelector('.crop-btn').classList.toggle('active');
+    const entering = !wrapper.classList.contains('cropping');
+    // Exit crop on any other element first
+    document.querySelectorAll('.canvas-element.cropping').forEach(el => {
+      el.classList.remove('cropping');
+      const btn = el.querySelector('.crop-btn');
+      if (btn) btn.classList.remove('active');
+    });
+    if (entering) {
+      wrapper.classList.add('cropping');
+      wrapper.querySelector('.crop-btn').classList.add('active');
+      selectDOMEl(wrapper, idx);
+      showToast('Drag the orange handles to crop · click Crop again to finish', true);
+    }
   }
 }
 
@@ -1296,17 +1605,51 @@ function startDrag(e, wrapper, idx) {
 // ── Resize ──
 function startResize(e, wrapper, idx, dir) {
   isResizing = true;
+  const cel = SLIDES[currentSlideIdx].canvasElements[idx];
+  const isImage = cel && cel.kind === 'image';
+  const aspectRatio = (startH => startW => startH > 0 ? startW / startH : 1)(wrapper.offsetHeight)(wrapper.offsetWidth);
   const startX = e.clientX, startY = e.clientY;
   const startW = wrapper.offsetWidth, startH = wrapper.offsetHeight;
   const startL = parseInt(wrapper.style.left), startT = parseInt(wrapper.style.top);
   const scale = 1 / zoomLevel;
+
   const onMove = ev => {
     const dx = (ev.clientX - startX) * scale;
     const dy = (ev.clientY - startY) * scale;
-    if (dir.includes('e')) wrapper.style.width  = Math.max(60, startW + dx) + 'px';
-    if (dir.includes('s')) wrapper.style.height = Math.max(30, startH + dy) + 'px';
-    if (dir.includes('w')) { wrapper.style.width = Math.max(60, startW - dx) + 'px'; wrapper.style.left = (startL + dx) + 'px'; }
-    if (dir.includes('n')) { wrapper.style.height = Math.max(30, startH - dy) + 'px'; wrapper.style.top  = (startT + dy) + 'px'; }
+    // Lock ratio for images unless Shift held; always free for text/shapes
+    const lockRatio = isImage && !ev.shiftKey;
+
+    if (lockRatio) {
+      // Use the dominant axis delta to drive both dimensions
+      let newW = startW, newL = startL;
+      let newH = startH, newT = startT;
+      if (dir === 'se' || dir === 'e' || dir === 's') {
+        newW = Math.max(40, startW + dx);
+        newH = newW / aspectRatio;
+      } else if (dir === 'nw' || dir === 'n' || dir === 'w') {
+        newW = Math.max(40, startW - dx);
+        newH = newW / aspectRatio;
+        newL = startL + (startW - newW);
+        newT = startT + (startH - newH);
+      } else if (dir === 'ne') {
+        newW = Math.max(40, startW + dx);
+        newH = newW / aspectRatio;
+        newT = startT + (startH - newH);
+      } else if (dir === 'sw') {
+        newW = Math.max(40, startW - dx);
+        newH = newW / aspectRatio;
+        newL = startL + (startW - newW);
+      }
+      wrapper.style.width  = newW + 'px';
+      wrapper.style.height = newH + 'px';
+      wrapper.style.left   = newL + 'px';
+      wrapper.style.top    = newT + 'px';
+    } else {
+      if (dir.includes('e')) wrapper.style.width  = Math.max(40, startW + dx) + 'px';
+      if (dir.includes('s')) wrapper.style.height = Math.max(30, startH + dy) + 'px';
+      if (dir.includes('w')) { wrapper.style.width = Math.max(40, startW - dx) + 'px'; wrapper.style.left = (startL + dx) + 'px'; }
+      if (dir.includes('n')) { wrapper.style.height = Math.max(30, startH - dy) + 'px'; wrapper.style.top  = (startT + dy) + 'px'; }
+    }
   };
   const onUp = () => {
     isResizing = false;
@@ -1321,9 +1664,13 @@ function startResize(e, wrapper, idx, dir) {
 
 // ── Crop ──
 function startCrop(e, wrapper, idx, dir) {
+  // Only start crop drag if we're in crop mode
+  if (!wrapper.classList.contains('cropping')) return;
   const cel = SLIDES[currentSlideIdx].canvasElements[idx];
   const wrap = wrapper.querySelector('.img-el-wrap');
   if (!cel || !wrap) return;
+  e.stopPropagation();
+  e.preventDefault();
   const startX = e.clientX, startY = e.clientY;
   const startClipTop    = cel.clipTop    || 0;
   const startClipRight  = cel.clipRight  || 0;
@@ -1339,9 +1686,15 @@ function startCrop(e, wrapper, idx, dir) {
     if (dir === 'cw') cel.clipLeft   = Math.max(0, startClipLeft + dx);
     if (dir === 'ce') cel.clipRight  = Math.max(0, startClipRight - dx);
     wrap.style.clipPath = `inset(${cel.clipTop||0}px ${cel.clipRight||0}px ${cel.clipBottom||0}px ${cel.clipLeft||0}px)`;
+    // Update props panel if open
+    ['pp-clipTop','pp-clipRight','pp-clipBottom','pp-clipLeft'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = Math.round(cel[id.replace('pp-clip','clip').replace('pp-','').toLowerCase()] || 0);
+    });
   };
   const onUp = () => {
     markUnsaved();
+    showPropsForElement(cel);
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
   };
@@ -1385,6 +1738,7 @@ function getStageCoords(e) {
 stage.addEventListener('mousedown', e => {
   if (activeTool === 'select') { deselectAll(); return; }
   if (activeTool === 'text') { addTextBox(e); return; }
+  if (activeTool === 'bullet') { addBulletList(e); return; }
   if (activeTool === 'image') { openImagePicker(e); return; }
   // Shape drawing
   const shapeTools = ['rect','ellipse','line','arrow'];
@@ -1557,7 +1911,25 @@ function showPropsForElement(cel) {
 
   let html = '';
 
-  if (cel.kind === 'text') {
+  if (cel.kind === 'bullet') {
+    html += propGroup('Bullet List', `
+      ${propRow('Font size', `<input class="prop-input" id="pp-fontSize" type="number" value="${cel.fontSize||14}" min="8" max="60">`)}
+      <div class="prop-color-row">
+        <div class="prop-label">Color</div>
+        <div class="prop-color-swatch" id="pp-color-swatch" style="background:${cel.color||'#b4d0f4'}"></div>
+        <input type="color" id="pp-color" value="${cel.color||'#b4d0f4'}">
+      </div>
+    `);
+    html += propGroup('Position & Size', `
+      ${propRow('X', `<input class="prop-input" id="pp-x" type="number" value="${Math.round(cel.x)}">`)}
+      ${propRow('Y', `<input class="prop-input" id="pp-y" type="number" value="${Math.round(cel.y)}">`)}
+      ${propRow('W', `<input class="prop-input" id="pp-w" type="number" value="${Math.round(cel.w)}">`)}
+    `);
+    html += `<div style="margin-top:8px;font-size:9px;color:var(--dim);line-height:1.6;padding:0 2px">
+      Double-click the list on the canvas to edit.<br>
+      <strong style="color:var(--muted)">Enter</strong> = new bullet &nbsp;·&nbsp; <strong style="color:var(--muted)">Backspace</strong> on empty line = delete
+    </div>`;
+  } else if (cel.kind === 'text') {
     html += propGroup('Text', `
       ${propRow('Size', `<input class="prop-input" id="pp-fontSize" type="number" value="${cel.fontSize||16}" min="8" max="120">`)}
       <div class="prop-color-row">
@@ -1822,7 +2194,7 @@ document.getElementById('meta-add-callout').addEventListener('click', () => {
 // ════════════════════════════════════════════════════════════════
 
 const toolButtons = {
-  select: 'tool-select', text: 'tool-text', image: 'tool-image',
+  select: 'tool-select', text: 'tool-text', bullet: 'tool-bullet', image: 'tool-image',
   rect: 'tool-rect', ellipse: 'tool-ellipse', line: 'tool-line', arrow: 'tool-arrow'
 };
 
@@ -1958,6 +2330,7 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.hasAttribute('contenteditable')) return;
   if (e.key === 'v' || e.key === 'V') setTool('select');
   if (e.key === 't' || e.key === 'T') setTool('text');
+  if (e.key === 'b' || e.key === 'B') setTool('bullet');
   if (e.key === 'r' || e.key === 'R') setTool('rect');
   if (e.key === 'l' || e.key === 'L') setTool('line');
   if (e.key === 'a' || e.key === 'A') setTool('arrow');
