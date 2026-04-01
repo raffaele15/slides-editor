@@ -80,6 +80,7 @@ body::before {
   transition: all 0.2s; white-space: nowrap;
 }
 .tb-btn:hover { background: rgba(37,88,168,0.2); color: var(--white); border-color: var(--blue-400); }
+.tb-btn.active { color: var(--green); border-color: var(--green-border); background: var(--green-dim); }
 .tb-btn.primary { background: var(--green); border-color: var(--green); color: #020810; font-weight: 500; }
 .tb-btn.primary:hover { background: #5ddfaa; }
 .tb-btn.danger { border-color: rgba(224,92,92,0.4); color: var(--red); }
@@ -437,17 +438,23 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
   max-height: 0; overflow: hidden;
   transition: max-height 0.3s;
 }
-#meta-panel.open { max-height: 220px; }
-#meta-inner { padding: 12px 14px; display: flex; gap: 16px; }
+#meta-panel.open { max-height: 180px; }
+#meta-inner { padding: 10px 14px; display: flex; gap: 14px; overflow: hidden; }
 .meta-field { flex: 1; }
-.meta-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.meta-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 5px; }
 .meta-input {
   width: 100%; background: var(--navy-800); border: 1px solid var(--navy-600);
   color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-  padding: 6px 10px; border-radius: 4px; resize: none; line-height: 1.5;
+  padding: 5px 8px; border-radius: 4px; resize: none; line-height: 1.5;
 }
 .meta-input:focus { outline: none; border-color: var(--green); }
-textarea.meta-input { height: 80px; }
+textarea.meta-input { height: 70px; }
+.meta-mini-btn {
+  background: none; border: 1px solid var(--navy-600); color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.04em;
+  padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s;
+}
+.meta-mini-btn:hover { background: rgba(37,88,168,0.2); color: var(--white); border-color: var(--blue-400); }
 
 /* ── EMPTY STATE ── */
 #empty-state {
@@ -484,48 +491,49 @@ textarea.meta-input { height: 80px; }
 
 /* ── TIMELINE STRIP ── */
 #editor-timeline {
-  display: none;
+  display: none; flex-shrink: 0;
   align-items: stretch;
   background: rgba(4,13,28,0.97);
   border-bottom: 1px solid var(--navy-600);
-  flex-shrink: 0;
   overflow-x: auto;
 }
 #editor-timeline.visible { display: flex; }
-#editor-timeline::-webkit-scrollbar { height: 3px; }
+#editor-timeline::-webkit-scrollbar { height: 2px; }
 #editor-timeline::-webkit-scrollbar-thumb { background: var(--navy-600); }
 .etl-phase {
-  flex: 1; min-width: 80px;
+  flex: 1; min-width: 90px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 3px;
-  padding: 7px 8px; cursor: pointer;
+  padding: 7px 6px; cursor: pointer;
   border-right: 1px solid var(--navy-700);
-  transition: background 0.2s; position: relative;
+  transition: background 0.2s; position: relative; overflow: hidden;
 }
 .etl-phase:last-child { border-right: none; }
-.etl-phase:hover { background: rgba(37,88,168,0.15); }
-.etl-phase.active { background: rgba(37,88,168,0.25); }
+.etl-phase:hover { background: rgba(37,88,168,0.18); }
+.etl-phase.active { background: rgba(37,88,168,0.28); }
 .etl-phase.active::after {
-  content: ''; position: absolute;
-  bottom: 0; left: 0; right: 0; height: 2px;
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
   background: var(--gold);
 }
 .etl-num { font-size: 8px; letter-spacing: 0.15em; color: var(--gold); opacity: 0.7; }
 .etl-phase.active .etl-num { opacity: 1; }
-.etl-name { font-size: 9px; letter-spacing: 0.05em; color: var(--muted); text-align: center; line-height: 1.3; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+.etl-name {
+  font-size: 8px; letter-spacing: 0.05em; color: var(--muted);
+  text-align: center; line-height: 1.3; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;
+}
 .etl-phase.active .etl-name { color: var(--blue-100); }
-.etl-dots { display: flex; gap: 4px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
+.etl-dots { display: flex; gap: 4px; margin-top: 3px; flex-wrap: wrap; justify-content: center; }
 .etl-dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--navy-500); cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s; flex-shrink: 0;
 }
-.etl-dot:hover { transform: scale(1.6); }
+.etl-dot:hover { transform: scale(1.7); background: var(--blue-300); }
 .etl-dot.visited { background: var(--blue-400); }
-.etl-dot.current { background: var(--gold); }
+.etl-dot.current { background: var(--gold); transform: scale(1.2); }
 
-
+/* ── ZOOM ── */
 #zoom-ctrl {
   position: absolute; bottom: 12px; right: 12px; z-index: 50;
   display: flex; align-items: center; gap: 4px;
@@ -726,21 +734,26 @@ textarea.meta-input { height: 80px; }
     <!-- META PANEL -->
     <div id="meta-panel">
       <div id="meta-inner">
-        <div class="meta-field" style="flex:0.6">
+        <div class="meta-field" style="flex:0.55">
           <div class="meta-label">Eyebrow</div>
           <input class="meta-input" id="meta-eyebrow" type="text" placeholder="Phase 01 — Introduction">
-        </div>
-        <div class="meta-field" style="flex:0.8">
-          <div class="meta-label">Title</div>
+          <div class="meta-label" style="margin-top:8px">Title</div>
           <input class="meta-input" id="meta-title" type="text" placeholder="Slide Title">
         </div>
-        <div class="meta-field" style="flex:1.8">
-          <div class="meta-label">Body (HTML — bullets, callouts…)</div>
-          <textarea class="meta-input" id="meta-body" placeholder="&lt;ul&gt;&lt;li&gt;Your bullet&lt;/li&gt;&lt;/ul&gt;"></textarea>
+        <div class="meta-field" style="flex:1.2">
+          <div class="meta-label" style="display:flex;align-items:center;justify-content:space-between">
+            Bullet Points
+            <span style="font-size:8px;color:var(--dim);letter-spacing:0.04em;text-transform:none">one per line · blank line = callout</span>
+          </div>
+          <textarea class="meta-input" id="meta-bullets" placeholder="Your first bullet&#10;Your second bullet&#10;&#10;Callout text here" style="height:90px;font-size:10px"></textarea>
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <button class="meta-mini-btn" id="meta-add-bullet">+ Bullet</button>
+            <button class="meta-mini-btn" id="meta-add-callout">+ Callout</button>
+          </div>
         </div>
-        <div class="meta-field" style="flex:1">
+        <div class="meta-field" style="flex:0.8">
           <div class="meta-label">Speaker Notes</div>
-          <textarea class="meta-input" id="meta-notes" placeholder="Notes visible in presenter view..."></textarea>
+          <textarea class="meta-input" id="meta-notes" placeholder="Notes visible in presenter view..." style="height:90px"></textarea>
         </div>
       </div>
     </div>
@@ -782,9 +795,10 @@ textarea.meta-input { height: 80px; }
     <div class="dm-label">Drive File ID or URL</div>
     <input class="dm-input" id="drive-input" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
     <div class="dm-hint">
-      Share your image as <strong>"Anyone with the link"</strong>.<br>
-      The file ID is the long string in your Drive URL:<br>
-      <code>drive.google.com/file/d/<strong>[FILE_ID]</strong>/view</code>
+      Share your image as <strong>"Anyone with the link"</strong> in Google Drive.<br>
+      The file ID is the long string in the URL:<br>
+      <code>drive.google.com/file/d/<strong>[FILE_ID]</strong>/view</code><br><br>
+      ⚠ Image must be publicly shared to display correctly.
     </div>
     <div class="dm-label">Caption (optional)</div>
     <input class="dm-input" id="drive-caption" type="text" placeholder="Fig. 1 — Description">
@@ -848,52 +862,41 @@ document.getElementById('file-input').addEventListener('change', e => {
 });
 
 function loadHTML(src) {
-  // Parse SLIDES array from source using unambiguous sentinels
-  const match = src.match(/\/\/ __ SLIDES_JSON_START __\s*([\s\S]*?)\s*\/\/ __ SLIDES_JSON_END __/);
-  if (!match) {
-    // Fallback: try old-style regex for legacy files
-    const fallback = src.match(/const SLIDES = (\[[\s\S]*?\]);\s*\n\/\/ ═/);
-    if (!fallback) {
-      showToast('Could not find SLIDES array in HTML. Make sure this is the right file.', false);
-      return;
-    }
-    try {
-      SLIDES = (new Function('return ' + fallback[1]))();
-    } catch(err) {
-      showToast('Error parsing slides: ' + err.message, false);
-      return;
-    }
+  // Support both new sentinel format and legacy format
+  let rawArray = null;
+  const sentinelMatch = src.match(/\/\/ __ SLIDES_JSON_START __\s*([\s\S]*?)\s*\/\/ __ SLIDES_JSON_END __/);
+  if (sentinelMatch) {
+    rawArray = sentinelMatch[1].trim().replace(/^const SLIDES\s*=\s*/, '').replace(/;$/, '');
   } else {
-    // Strip leading "const SLIDES = " if present (new format has full assignment)
-    let raw = match[1].trim();
-    if (raw.startsWith('const SLIDES =')) raw = raw.replace(/^const SLIDES\s*=\s*/, '').replace(/;$/, '');
-    try {
-      SLIDES = JSON.parse(raw);
-    } catch(err) {
-      showToast('Error parsing slides: ' + err.message, false);
-      return;
-    }
+    const legacyMatch = src.match(/const SLIDES = (\[[\s\S]*?\]);[\s\S]{0,10}\/\/ ═/);
+    if (legacyMatch) rawArray = legacyMatch[1];
   }
-  // Ensure all slides have canvasElements
-  SLIDES.forEach(s => {
-    if (!s.canvasElements) s.canvasElements = [];
-  });
-  document.getElementById('empty-state').classList.add('hidden');
-  document.getElementById('file-label').textContent = fileName;
-  document.getElementById('file-label').classList.add('loaded');
-  document.getElementById('slide-count').textContent = SLIDES.length + ' slides';
-  renderSidebar();
-  renderTimeline();
-  selectSlide(0);
-  showToast('Loaded ' + SLIDES.length + ' slides', true);
-  window._originalSrc = src;
-  // Auto-open the text editor panel
-  if (!metaOpen) {
-    metaOpen = true;
-    document.getElementById('meta-panel').classList.add('open');
-    document.getElementById('btn-meta').style.color = 'var(--green)';
+  if (!rawArray) {
+    showToast('Could not find SLIDES array. Make sure this is the right file.', false);
+    return;
+  }
+  try {
+    SLIDES = (new Function('return ' + rawArray))();
+    SLIDES.forEach(s => { if (!s.canvasElements) s.canvasElements = []; });
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('file-label').textContent = fileName;
+    document.getElementById('file-label').classList.add('loaded');
+    document.getElementById('slide-count').textContent = SLIDES.length + ' slides';
+    renderSidebar();
+    renderTimeline();
+    selectSlide(0);
+    if (!metaOpen) {
+      metaOpen = true;
+      document.getElementById('meta-panel').classList.add('open');
+      document.getElementById('btn-meta').classList.add('active');
+    }
+    showToast('Loaded ' + SLIDES.length + ' slides', true);
+    window._originalSrc = src;
+  } catch(err) {
+    showToast('Error parsing slides: ' + err.message, false);
   }
 }
+
 
 // ════════════════════════════════════════════════════════════════
 //  TIMELINE
@@ -901,15 +904,15 @@ function loadHTML(src) {
 
 function renderTimeline() {
   const tl = document.getElementById('editor-timeline');
+  tl.innerHTML = '';
   if (!SLIDES.length) { tl.classList.remove('visible'); return; }
   tl.classList.add('visible');
-  tl.innerHTML = '';
 
-  // Build phase map
+  // Build phase index
   const phases = [];
   SLIDES.forEach((s, i) => {
-    const pi = s.phase - 1;
-    if (!phases[pi]) phases[pi] = { name: s.phaseName, start: i, count: 0 };
+    const pi = (s.phase || 1) - 1;
+    if (!phases[pi]) phases[pi] = { name: s.phaseName || ('Phase ' + s.phase), start: i, count: 0 };
     phases[pi].count++;
   });
 
@@ -919,7 +922,7 @@ function renderTimeline() {
     tab.className = 'etl-phase';
     tab.dataset.phase = pi;
     const dotsHTML = Array.from({length: p.count}, (_, di) =>
-      `<div class="etl-dot" data-si="${p.start + di}"></div>`
+      `<div class="etl-dot" data-si="${p.start + di}" title="Slide ${p.start + di + 1}"></div>`
     ).join('');
     tab.innerHTML = `
       <div class="etl-num">0${pi + 1}</div>
@@ -927,11 +930,8 @@ function renderTimeline() {
       <div class="etl-dots">${dotsHTML}</div>
     `;
     tab.addEventListener('click', e => {
-      if (e.target.classList.contains('etl-dot')) {
-        e.stopPropagation();
-        selectSlide(parseInt(e.target.dataset.si));
-        return;
-      }
+      const dot = e.target.closest('.etl-dot');
+      if (dot) { e.stopPropagation(); selectSlide(parseInt(dot.dataset.si)); return; }
       selectSlide(p.start);
     });
     tl.appendChild(tab);
@@ -941,21 +941,23 @@ function renderTimeline() {
 }
 
 function updateTimeline() {
+  if (!SLIDES.length) return;
   const s = SLIDES[currentSlideIdx];
-  if (!s) return;
-  const currentPhase = s.phase - 1;
+  const currentPhase = (s ? s.phase : 1) - 1;
   document.querySelectorAll('.etl-phase').forEach((tab, pi) => {
     tab.classList.toggle('active', pi === currentPhase);
   });
   document.querySelectorAll('.etl-dot').forEach(dot => {
     const si = parseInt(dot.dataset.si);
-    dot.classList.remove('current','visited');
+    dot.classList.remove('current', 'visited');
     if (si === currentSlideIdx) dot.classList.add('current');
     else if (si < currentSlideIdx) dot.classList.add('visited');
   });
 }
 
-
+// ════════════════════════════════════════════════════════════════
+//  SIDEBAR
+// ════════════════════════════════════════════════════════════════
 
 function renderSidebar() {
   const list = document.getElementById('slide-list');
@@ -984,7 +986,6 @@ function stripHTML(h) {
 
 function selectSlide(idx) {
   currentSlideIdx = idx;
-  // Save current canvas state before switching
   saveCurrentCanvas();
   document.querySelectorAll('.slide-thumb').forEach((t, i) => t.classList.toggle('active', i === idx));
   renderSlidePreview();
@@ -1081,7 +1082,7 @@ function createTextDOMElement(cel, idx) {
   wrapper.innerHTML = `
     <div class="el-border"></div>
     <div class="el-actions">
-      <button class="el-act-btn" data-act="edit">Edit</button>
+      <span style="font-size:8px;color:var(--dim);padding:0 4px;letter-spacing:0.05em">dbl-click to type</span>
       <div class="el-act-sep"></div>
       <button class="el-act-btn" data-act="front">Front</button>
       <button class="el-act-btn" data-act="back">Back</button>
@@ -1498,7 +1499,7 @@ document.getElementById('drive-ok').addEventListener('click', () => {
   let fileId = val;
   const match = val.match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (match) fileId = match[1];
-  const src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+  const src = `https://lh3.googleusercontent.com/d/${fileId}`;
   _imagePlacementPos = { x: 100, y: 100 };
   addImageElement(src, caption || 'Drive image');
   document.getElementById('drive-modal').classList.remove('open');
@@ -1698,48 +1699,123 @@ let metaOpen = false;
 document.getElementById('btn-meta').addEventListener('click', () => {
   metaOpen = !metaOpen;
   document.getElementById('meta-panel').classList.toggle('open', metaOpen);
-  document.getElementById('btn-meta').style.color = metaOpen ? 'var(--green)' : '';
+  document.getElementById('btn-meta').classList.toggle('active', metaOpen);
 });
+
+// Convert HTML body → plain bullet lines for the textarea
+function bodyToLines(html) {
+  if (!html) return '';
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  const lines = [];
+  d.querySelectorAll('li').forEach(li => lines.push(li.textContent.trim()));
+  d.querySelectorAll('.callout').forEach(callout => {
+    lines.push(''); // blank line before callout
+    lines.push(callout.textContent.trim());
+  });
+  // Fallback: strip all tags and return text
+  if (!lines.length) return d.textContent.trim();
+  return lines.join('\n');
+}
+
+// Convert bullet lines → HTML body
+function linesToBody(text) {
+  if (!text.trim()) return '';
+  const lines = text.split('\n');
+  let html = '';
+  let inList = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) {
+      // Blank line: close list if open, next non-empty becomes callout
+      if (inList) { html += '</ul>'; inList = false; }
+      // peek ahead
+      let j = i + 1;
+      while (j < lines.length && !lines[j].trim()) j++;
+      if (j < lines.length) {
+        html += `<div class="callout">${escLine(lines[j].trim())}</div>`;
+        i = j; // skip
+      }
+    } else {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${escLine(line)}</li>`;
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+
+function escLine(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 
 function populateMetaPanel() {
   const s = SLIDES[currentSlideIdx];
   document.getElementById('meta-eyebrow').value = stripHTML(s.eyebrow || '');
   document.getElementById('meta-title').value = stripHTML(s.title || '');
   document.getElementById('meta-notes').value = s.notes || '';
-  // Body: for split slides, show leftBody + rightBody; otherwise body
+
+  const bulletTA = document.getElementById('meta-bullets');
   if (s.type === 'split') {
-    document.getElementById('meta-body').value = '⚠ Split slide — edit Left/Right body below:\n\n[LEFT]\n' + (s.leftBody || '') + '\n\n[RIGHT]\n' + (s.rightBody || '');
-    document.getElementById('meta-body').readOnly = true;
-    document.getElementById('meta-body').style.opacity = '0.5';
+    // For split slides show both columns
+    const left = bodyToLines(s.leftBody || '');
+    const right = bodyToLines(s.rightBody || '');
+    bulletTA.value = '[LEFT COLUMN]\n' + left + '\n\n[RIGHT COLUMN]\n' + right;
+    bulletTA.dataset.splitMode = '1';
   } else {
-    document.getElementById('meta-body').value = s.body || '';
-    document.getElementById('meta-body').readOnly = false;
-    document.getElementById('meta-body').style.opacity = '1';
+    bulletTA.value = bodyToLines(s.body || '');
+    bulletTA.dataset.splitMode = '';
   }
 }
 
-['meta-eyebrow','meta-title'].forEach(id => {
-  document.getElementById(id).addEventListener('input', () => {
-    const s = SLIDES[currentSlideIdx];
-    s.eyebrow = document.getElementById('meta-eyebrow').value;
-    s.title = document.getElementById('meta-title').value;
-    renderSlidePreview();
-    renderSidebar();
-    markUnsaved();
-  });
-});
-document.getElementById('meta-body').addEventListener('input', () => {
+function applyBulletsToSlide() {
   const s = SLIDES[currentSlideIdx];
-  if (s.type !== 'split') {
-    s.body = document.getElementById('meta-body').value;
-    renderSlidePreview();
-    markUnsaved();
+  const text = document.getElementById('meta-bullets').value;
+  const splitMode = document.getElementById('meta-bullets').dataset.splitMode;
+  if (splitMode === '1') {
+    // Parse [LEFT COLUMN] / [RIGHT COLUMN] blocks
+    const leftMatch = text.match(/\[LEFT COLUMN\]\n([\s\S]*?)(?=\[RIGHT COLUMN\]|$)/i);
+    const rightMatch = text.match(/\[RIGHT COLUMN\]\n([\s\S]*?)$/i);
+    if (leftMatch) s.leftBody = linesToBody(leftMatch[1].trim());
+    if (rightMatch) s.rightBody = linesToBody(rightMatch[1].trim());
+  } else {
+    s.body = linesToBody(text);
   }
+  renderSlidePreview();
+  markUnsaved();
+}
+
+document.getElementById('meta-eyebrow').addEventListener('input', () => {
+  SLIDES[currentSlideIdx].eyebrow = document.getElementById('meta-eyebrow').value;
+  renderSlidePreview(); renderSidebar(); markUnsaved();
 });
+document.getElementById('meta-title').addEventListener('input', () => {
+  SLIDES[currentSlideIdx].title = document.getElementById('meta-title').value;
+  renderSlidePreview(); renderSidebar(); markUnsaved();
+});
+document.getElementById('meta-bullets').addEventListener('input', applyBulletsToSlide);
 document.getElementById('meta-notes').addEventListener('input', () => {
   SLIDES[currentSlideIdx].notes = document.getElementById('meta-notes').value;
   markUnsaved();
 });
+
+document.getElementById('meta-add-bullet').addEventListener('click', () => {
+  const ta = document.getElementById('meta-bullets');
+  const cur = ta.value;
+  ta.value = cur + (cur && !cur.endsWith('\n') ? '\n' : '') + 'New bullet point';
+  applyBulletsToSlide();
+  ta.focus();
+  ta.setSelectionRange(ta.value.lastIndexOf('New bullet point'), ta.value.length);
+});
+document.getElementById('meta-add-callout').addEventListener('click', () => {
+  const ta = document.getElementById('meta-bullets');
+  const cur = ta.value;
+  ta.value = cur + (cur && !cur.endsWith('\n') ? '\n' : '') + '\nCallout text here';
+  applyBulletsToSlide();
+  ta.focus();
+});
+
 
 // ════════════════════════════════════════════════════════════════
 //  TOOLS
@@ -1912,10 +1988,19 @@ function downloadHTML() {
   saveCurrentCanvas();
 
   const slidesJSON = JSON.stringify(SLIDES, null, 2);
-  const updated = window._originalSrc.replace(
-    /\/\/ __ SLIDES_JSON_START __[\s\S]*?\/\/ __ SLIDES_JSON_END __/,
-    `// __ SLIDES_JSON_START __\nconst SLIDES = ${slidesJSON};\n// __ SLIDES_JSON_END __`
-  );
+  // Try new sentinel format first, fall back to legacy
+  let updated;
+  if (window._originalSrc.includes('// __ SLIDES_JSON_START __')) {
+    updated = window._originalSrc.replace(
+      /\/\/ __ SLIDES_JSON_START __[\s\S]*?\/\/ __ SLIDES_JSON_END __/,
+      `// __ SLIDES_JSON_START __\nconst SLIDES = ${slidesJSON};\n// __ SLIDES_JSON_END __`
+    );
+  } else {
+    updated = window._originalSrc.replace(
+      /const SLIDES = \[[\s\S]*?\];(\s*\n\/\/ ═)/,
+      `const SLIDES = ${slidesJSON};$1`
+    );
+  }
 
   const blob = new Blob([updated], { type: 'text/html' });
   const a = document.createElement('a');
