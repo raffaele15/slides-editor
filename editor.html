@@ -612,16 +612,9 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
 .pe-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.3; }
 
 /* ── SLIDE META EDITOR (bottom panel) ── */
-#meta-panel {
-  border-top: 1px solid var(--navy-700);
-  background: rgba(4,13,28,0.98);
-  flex-shrink: 0;
-  max-height: 0; overflow: hidden;
-  transition: max-height 0.3s;
-}
-#meta-panel.open { max-height: 180px; }
-#meta-inner { padding: 10px 14px; display: flex; gap: 14px; overflow: hidden; }
-.meta-field { flex: 1; }
+/* meta-panel fields (now live in right panel Text tab) */
+#meta-inner { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
+.meta-field { width: 100%; }
 .meta-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin-bottom: 5px; }
 .meta-input {
   width: 100%; background: var(--navy-800); border: 1px solid var(--navy-600);
@@ -714,7 +707,24 @@ textarea.meta-input { height: 70px; }
 .etl-dot.visited { background: var(--blue-400); }
 .etl-dot.current { background: var(--gold); transform: scale(1.2); }
 
-/* ── SNAP GRID OVERLAY ── */
+/* Reveal badge on canvas elements */
+.reveal-badge {
+  position: absolute; top: -10px; right: -6px; z-index: 30;
+  background: var(--green); color: #020810;
+  font-family: 'IBM Plex Mono', monospace; font-size: 8px; font-weight: 600;
+  border-radius: 10px; padding: 1px 5px; pointer-events: none;
+  line-height: 1.4; box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+/* Canvas eyebrow/title preview in editor */
+.canvas-eyebrow-preview {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); padding: 4px 8px; white-space: nowrap;
+}
+.canvas-title-preview {
+  font-family: 'DM Serif Display', serif; font-weight: 400;
+  color: var(--white); padding: 4px 8px; line-height: 1.1;
+}
 #snap-grid-overlay {
   position: absolute; inset: 0; z-index: 8;
   pointer-events: none; overflow: hidden;
@@ -816,6 +826,9 @@ textarea.meta-input { height: 70px; }
 .rp-pane::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 2px; }
 
 /* Props pane (existing) */
+#pane-text { display: flex; flex-direction: column; overflow: hidden; }
+#pane-text.active { display: flex; }
+#pane-text #meta-inner { flex: 1; overflow-y: auto; }
 #pane-props { padding: 12px; }
 
 /* Timeline pane */
@@ -1157,6 +1170,14 @@ textarea.meta-input { height: 70px; }
           <svg viewBox="0 0 24 24"><path d="M5 3l14 9-7 1-4 7z"/></svg>
           Select
         </button>
+        <button class="tr-btn" id="tool-eyebrow" title="Add Eyebrow label">
+          <svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/></svg>
+          Eyebrow
+        </button>
+        <button class="tr-btn" id="tool-title" title="Add Title">
+          <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          Title
+        </button>
         <button class="tr-btn" id="tool-text" title="Add Text Box (T)">
           <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
           Text
@@ -1260,44 +1281,52 @@ textarea.meta-input { height: 70px; }
         <div id="zoom-val">100%</div>
         <button class="zoom-btn" id="zoom-in">+</button>
       </div>
-    </div>
+    </div><!-- end canvas-wrapper -->
 
-    <!-- META PANEL -->
-    <div id="meta-panel">
-      <div id="meta-inner">
-        <div class="meta-field" style="flex:0.55">
-          <div class="meta-label">Eyebrow</div>
-          <input class="meta-input" id="meta-eyebrow" type="text" placeholder="Phase 01 — Introduction">
-          <div class="meta-label" style="margin-top:8px">Title</div>
-          <input class="meta-input" id="meta-title" type="text" placeholder="Slide Title">
-        </div>
-        <div class="meta-field" style="flex:1.2">
-          <div class="meta-label" style="display:flex;align-items:center;justify-content:space-between">
-            Bullet Points
-            <span style="font-size:8px;color:var(--dim);letter-spacing:0.04em;text-transform:none">one per line · blank line = callout</span>
-          </div>
-          <textarea class="meta-input" id="meta-bullets" placeholder="Your first bullet&#10;Your second bullet&#10;&#10;Callout text here" style="height:90px;font-size:10px"></textarea>
-          <div style="display:flex;gap:4px;margin-top:4px">
-            <button class="meta-mini-btn" id="meta-add-bullet">+ Bullet</button>
-            <button class="meta-mini-btn" id="meta-add-callout">+ Callout</button>
-          </div>
-        </div>
-        <div class="meta-field" style="flex:0.8">
-          <div class="meta-label">Speaker Notes</div>
-          <textarea class="meta-input" id="meta-notes" placeholder="Notes visible in presenter view..." style="height:90px"></textarea>
-        </div>
-      </div>
-    </div>
-  </div>
+  </div><!-- end editor-main -->
 
   <!-- RIGHT PANEL RESIZE HANDLE -->
   <div id="props-resize" title="Drag to resize panel"></div>
 
-  <!-- RIGHT PANEL (Properties / Timeline / Settings) -->
+  <!-- RIGHT PANEL (Text / Properties / Settings) -->
   <div id="props-panel">
     <div class="rp-tabs">
+      <button class="rp-tab" data-tab="text">Text</button>
       <button class="rp-tab active" data-tab="props">Properties</button>
       <button class="rp-tab" data-tab="settings">Settings</button>
+    </div>
+
+    <!-- Text pane -->
+    <div class="rp-pane" id="pane-text">
+      <div id="meta-inner">
+        <div class="meta-field">
+          <div class="meta-label" style="display:flex;align-items:center;justify-content:space-between">
+            Eyebrow
+            <button class="meta-mini-btn" id="meta-eyebrow-apply" title="Copy position to all slides" style="font-size:8px">⇒ All slides</button>
+          </div>
+          <input class="meta-input" id="meta-eyebrow" type="text" placeholder="Phase 01 — Introduction">
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <input class="meta-input" id="meta-eyebrow-x" type="number" placeholder="X" style="width:60px" title="X position">
+            <input class="meta-input" id="meta-eyebrow-y" type="number" placeholder="Y" style="width:60px" title="Y position">
+          </div>
+        </div>
+        <div class="meta-field">
+          <div class="meta-label" style="display:flex;align-items:center;justify-content:space-between">
+            Title
+            <button class="meta-mini-btn" id="meta-title-apply" title="Copy position to all slides" style="font-size:8px">⇒ All slides</button>
+          </div>
+          <input class="meta-input" id="meta-title" type="text" placeholder="Slide Title">
+          <div style="display:flex;gap:4px;margin-top:4px">
+            <input class="meta-input" id="meta-title-x" type="number" placeholder="X" style="width:60px" title="X position">
+            <input class="meta-input" id="meta-title-y" type="number" placeholder="Y" style="width:60px" title="Y position">
+            <input class="meta-input" id="meta-title-size" type="number" placeholder="px" style="width:52px" title="Font size">
+          </div>
+        </div>
+        <div class="meta-field" style="flex:1;display:flex;flex-direction:column">
+          <div class="meta-label">Speaker Notes</div>
+          <textarea class="meta-input" id="meta-notes" placeholder="Notes visible in presenter view..." style="flex:1;min-height:80px"></textarea>
+        </div>
+      </div>
     </div>
 
     <!-- Props pane -->
@@ -1466,12 +1495,10 @@ function loadHTML(src) {
     document.getElementById('slide-count').textContent = SLIDES.length + ' slides';
     renderSidebar();
     renderTimeline();
+    initTreeDrag();
     selectSlide(0);
-    if (!metaOpen) {
-      metaOpen = true;
-      document.getElementById('meta-panel').classList.add('open');
-      document.getElementById('btn-meta').classList.add('active');
-    }
+    // Switch to Text tab on load so the fields are immediately visible
+    switchToTab('text');
     showToast('Loaded ' + SLIDES.length + ' slides', true);
     window._originalSrc = src;
   } catch(err) {
@@ -1541,7 +1568,7 @@ function updateTimeline() {
 //  SIDEBAR
 // ════════════════════════════════════════════════════════════════
 
-// Collapsed state per phase index
+// Collapsed state per phase number (keyed by phaseNum, not index, so it survives reorders)
 const _phaseCollapsed = {};
 
 function renderSidebar() {
@@ -1550,85 +1577,42 @@ function renderSidebar() {
   document.getElementById('slide-count').textContent = SLIDES.length + ' slides';
   if (!SLIDES.length) return;
 
-  // Build ordered phase list
   const phases = buildPhaseList();
 
   phases.forEach((phase, pi) => {
     const group = document.createElement('div');
-    group.className = 'phase-group' + (_phaseCollapsed[pi] ? ' collapsed' : '');
+    group.className = 'phase-group' + (_phaseCollapsed[phase.phaseNum] ? ' collapsed' : '');
     group.dataset.phaseIdx = pi;
     group.dataset.phaseNum = phase.phaseNum;
 
-    // Phase header
     const header = document.createElement('div');
     header.className = 'phase-group-header';
     header.draggable = true;
     header.dataset.dragType = 'phase';
     header.dataset.phaseIdx = pi;
+    header.dataset.phaseNum = phase.phaseNum;
     header.innerHTML = `
-      <span class="pg-toggle">▾</span>
+      <span class="pg-toggle" data-toggle="${phase.phaseNum}">▾</span>
       <span class="pg-num">P${pi + 1}</span>
-      <input class="pg-name-input" value="${phase.name}" placeholder="Phase name" title="Click to rename">
-      <button class="pg-add-btn" title="Add slide to this phase" tabindex="-1">+</button>
-      <button class="pg-del" title="Delete phase" tabindex="-1">✕</button>
+      <input class="pg-name-input" value="${phase.name}" placeholder="Phase name">
+      <button class="pg-add-btn" data-phase-num="${phase.phaseNum}" data-phase-name="${phase.name}" title="Add slide to this phase">+</button>
+      <button class="pg-del" data-phase-idx="${pi}" title="Delete phase">✕</button>
     `;
 
-    // Toggle collapse
-    header.querySelector('.pg-toggle').addEventListener('click', e => {
-      e.stopPropagation();
-      _phaseCollapsed[pi] = !_phaseCollapsed[pi];
-      group.classList.toggle('collapsed', !!_phaseCollapsed[pi]);
-    });
-
-    // Rename phase
+    // Stop name input from triggering drag
     const nameInput = header.querySelector('.pg-name-input');
-    nameInput.addEventListener('mousedown', e => e.stopPropagation()); // don't start drag
+    nameInput.addEventListener('mousedown', e => e.stopPropagation());
     nameInput.addEventListener('click', e => e.stopPropagation());
     nameInput.addEventListener('input', () => {
       phase.slides.forEach(si => { if (SLIDES[si]) SLIDES[si].phaseName = nameInput.value; });
+      // Update data attributes so delegation picks up new name
+      header.querySelector('.pg-add-btn').dataset.phaseName = nameInput.value;
       renderTimeline(); markUnsaved();
     });
     nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') nameInput.blur(); });
 
-    // Add slide to this phase
-    header.querySelector('.pg-add-btn').addEventListener('click', e => {
-      e.stopPropagation();
-      pushHistory();
-      const insertAfter = phase.slides.length > 0 ? phase.slides[phase.slides.length - 1] : SLIDES.length - 1;
-      const newSlide = {
-        phase: phase.phaseNum, phaseName: phase.name,
-        type: 'content', eyebrow: phase.name,
-        title: 'New Slide', body: '<ul><li>Add your content here</li></ul>',
-        image: '', imageCaption: '', imagePosition: 'right',
-        notes: '', canvasElements: []
-      };
-      SLIDES.splice(insertAfter + 1, 0, newSlide);
-      renderSidebar(); renderTimeline();
-      selectSlide(insertAfter + 1);
-      markUnsaved();
-      showToast('Slide added to ' + phase.name, true);
-    });
-
-    // Delete phase
-    header.querySelector('.pg-del').addEventListener('click', e => {
-      e.stopPropagation();
-      if (phases.length <= 1) { showToast('Must have at least one phase', false); return; }
-      if (!confirm('Delete phase "' + phase.name + '"? Its slides will move to the adjacent phase.')) return;
-      pushHistory();
-      const targetPhase = phases[pi > 0 ? pi - 1 : 1];
-      if (targetPhase) {
-        phase.slides.forEach(si => {
-          if (SLIDES[si]) { SLIDES[si].phase = targetPhase.phaseNum; SLIDES[si].phaseName = targetPhase.name; }
-        });
-      }
-      const newIdx = Math.min(currentSlideIdx, SLIDES.length - 1);
-      currentSlideIdx = newIdx;
-      renderSidebar(); renderTimeline(); selectSlide(newIdx); markUnsaved();
-    });
-
     group.appendChild(header);
 
-    // Slides container
     const slidesContainer = document.createElement('div');
     slidesContainer.className = 'phase-slides';
     slidesContainer.dataset.phaseIdx = pi;
@@ -1641,6 +1625,7 @@ function renderSidebar() {
       thumb.className = 'slide-thumb' + (si === currentSlideIdx ? ' active' : '');
       thumb.dataset.idx = si;
       thumb.dataset.dragType = 'slide';
+      thumb.dataset.phaseNum = phase.phaseNum;
       thumb.draggable = true;
       const hasCanvas = s.canvasElements && s.canvasElements.length > 0;
       thumb.innerHTML = `
@@ -1655,22 +1640,12 @@ function renderSidebar() {
           <button class="st-act del" data-act="del" title="Delete slide">✕</button>
         </div>
       `;
-      thumb.addEventListener('click', e => {
-        if (e.target.closest('.st-actions') || e.target.closest('.st-drag-handle')) return;
-        selectSlide(si);
-      });
-      thumb.querySelector('.st-act.del').addEventListener('click', e => {
-        e.stopPropagation();
-        handleSlideAction('del', si);
-      });
       slidesContainer.appendChild(thumb);
     });
 
     group.appendChild(slidesContainer);
     list.appendChild(group);
   });
-
-  initTreeDrag();
 }
 
 function buildPhaseList() {
@@ -1698,111 +1673,170 @@ function handleSlideAction(act, idx) {
   }
 }
 
-// ── Unified tree drag (phases + slides) ──
-let _treeDragPhaseIdx = null;  // phase being dragged
-let _treeDragSlideIdx = null;  // slide being dragged
+// ── Unified tree drag — single delegated listener, set up once ──
+let _treeDragPhaseIdx = null;
+let _treeDragSlideIdx = null;
+let _treeDragSlideSrcPhaseNum = null; // phase the dragged slide belongs to
+let _treeListenersAttached = false;
 
 function initTreeDrag() {
+  if (_treeListenersAttached) return;
+  _treeListenersAttached = true;
+
   const list = document.getElementById('slide-list');
 
-  // Remove old listeners by cloning
-  const newList = list.cloneNode(true);
-  list.parentNode.replaceChild(newList, list);
-
-  // Re-attach click/input listeners (lost by cloneNode)
-  // Actually easier to use event delegation on the new list
-  newList.addEventListener('click', e => {
+  // ── CLICK delegation ──
+  list.addEventListener('click', e => {
+    // Slide select
     const thumb = e.target.closest('.slide-thumb');
     if (thumb && !e.target.closest('.st-actions') && !e.target.closest('.st-drag-handle')) {
       selectSlide(parseInt(thumb.dataset.idx));
+      return;
     }
+    // Delete slide
     const del = e.target.closest('.st-act.del');
     if (del) {
       e.stopPropagation();
-      const thumb2 = del.closest('.slide-thumb');
-      if (thumb2) handleSlideAction('del', parseInt(thumb2.dataset.idx));
+      const t = del.closest('.slide-thumb');
+      if (t) handleSlideAction('del', parseInt(t.dataset.idx));
+      return;
     }
+    // Collapse/expand phase
     const toggle = e.target.closest('.pg-toggle');
     if (toggle) {
       e.stopPropagation();
+      const pn = parseInt(toggle.dataset.toggle);
+      _phaseCollapsed[pn] = !_phaseCollapsed[pn];
       const group = toggle.closest('.phase-group');
-      if (group) {
-        const pi = parseInt(group.dataset.phaseIdx);
-        _phaseCollapsed[pi] = !_phaseCollapsed[pi];
-        group.classList.toggle('collapsed', !!_phaseCollapsed[pi]);
-      }
+      if (group) group.classList.toggle('collapsed', !!_phaseCollapsed[pn]);
+      return;
     }
-    const pgAdd = e.target.closest('.pg-add-btn');
-    if (pgAdd) { e.stopPropagation(); } // handled by renderSidebar listener
-    const pgDel = e.target.closest('.pg-del');
-    if (pgDel) { e.stopPropagation(); } // handled by renderSidebar listener
+    // Add slide to phase
+    const addBtn = e.target.closest('.pg-add-btn');
+    if (addBtn) {
+      e.stopPropagation();
+      const phaseNum = parseInt(addBtn.dataset.phaseNum);
+      const phaseName = addBtn.dataset.phaseName || addBtn.closest('.phase-group-header').querySelector('.pg-name-input').value;
+      pushHistory();
+      const phases = buildPhaseList();
+      const phase = phases.find(p => p.phaseNum === phaseNum);
+      const insertAfter = phase && phase.slides.length > 0
+        ? phase.slides[phase.slides.length - 1]
+        : SLIDES.length - 1;
+      const newSlide = {
+        phase: phaseNum, phaseName,
+        type: 'content', eyebrow: phaseName,
+        title: 'New Slide', body: '<ul><li>Add your content here</li></ul>',
+        image: '', imageCaption: '', imagePosition: 'right',
+        notes: '', canvasElements: []
+      };
+      SLIDES.splice(insertAfter + 1, 0, newSlide);
+      renderSidebar(); renderTimeline();
+      selectSlide(insertAfter + 1);
+      markUnsaved();
+      showToast('Slide added to ' + phaseName, true);
+      return;
+    }
+    // Delete phase
+    const delPhase = e.target.closest('.pg-del');
+    if (delPhase) {
+      e.stopPropagation();
+      const pi = parseInt(delPhase.dataset.phaseIdx);
+      const phases = buildPhaseList();
+      if (phases.length <= 1) { showToast('Must have at least one phase', false); return; }
+      const phase = phases[pi];
+      if (!confirm('Delete phase "' + phase.name + '"? Its slides will move to the adjacent phase.')) return;
+      pushHistory();
+      const targetPhase = phases[pi > 0 ? pi - 1 : 1];
+      if (targetPhase) {
+        phase.slides.forEach(si => {
+          if (SLIDES[si]) { SLIDES[si].phase = targetPhase.phaseNum; SLIDES[si].phaseName = targetPhase.name; }
+        });
+      }
+      currentSlideIdx = Math.min(currentSlideIdx, SLIDES.length - 1);
+      renderSidebar(); renderTimeline(); selectSlide(currentSlideIdx); markUnsaved();
+      return;
+    }
   });
 
   // ── DRAGSTART ──
-  newList.addEventListener('dragstart', e => {
+  list.addEventListener('dragstart', e => {
     const header = e.target.closest('.phase-group-header');
-    const thumb  = e.target.closest('.slide-thumb');
+    const thumb  = !header && e.target.closest('.slide-thumb');
     if (header) {
       _treeDragPhaseIdx = parseInt(header.dataset.phaseIdx);
       _treeDragSlideIdx = null;
+      _treeDragSlideSrcPhaseNum = null;
       header.closest('.phase-group').classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('drag-type', 'phase');
+      e.dataTransfer.setData('text/plain', 'phase:' + _treeDragPhaseIdx);
     } else if (thumb) {
       _treeDragSlideIdx = parseInt(thumb.dataset.idx);
+      _treeDragSlideSrcPhaseNum = parseInt(thumb.dataset.phaseNum);
       _treeDragPhaseIdx = null;
       thumb.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('drag-type', 'slide');
-      e.dataTransfer.setData('tl-chip-si', String(_treeDragSlideIdx));
+      e.dataTransfer.setData('text/plain', 'slide:' + _treeDragSlideIdx);
     }
   });
 
   // ── DRAGEND ──
-  newList.addEventListener('dragend', () => {
-    newList.querySelectorAll('.phase-group').forEach(g => g.classList.remove('dragging','phase-drag-over-top','phase-drag-over-bottom'));
-    newList.querySelectorAll('.slide-thumb').forEach(t => t.classList.remove('dragging','drag-over-top','drag-over-bottom'));
-    newList.querySelectorAll('.phase-slides').forEach(z => z.classList.remove('slide-drag-over'));
+  list.addEventListener('dragend', () => {
+    list.querySelectorAll('.phase-group').forEach(g =>
+      g.classList.remove('dragging', 'phase-drag-over-top', 'phase-drag-over-bottom'));
+    list.querySelectorAll('.slide-thumb').forEach(t =>
+      t.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom'));
+    list.querySelectorAll('.phase-slides').forEach(z =>
+      z.classList.remove('slide-drag-over'));
     _treeDragPhaseIdx = null;
     _treeDragSlideIdx = null;
+    _treeDragSlideSrcPhaseNum = null;
   });
 
   // ── DRAGOVER ──
-  newList.addEventListener('dragover', e => {
+  list.addEventListener('dragover', e => {
     e.preventDefault();
-    const dragType = e.dataTransfer.types.includes('drag-type') ? null : null; // can't read in dragover, use state vars
     if (_treeDragPhaseIdx !== null) {
-      // Dragging a phase — target another phase group
+      // Dragging a phase — highlight target phase group
+      list.querySelectorAll('.phase-group').forEach(g =>
+        g.classList.remove('phase-drag-over-top', 'phase-drag-over-bottom'));
       const group = e.target.closest('.phase-group');
-      newList.querySelectorAll('.phase-group').forEach(g => g.classList.remove('phase-drag-over-top','phase-drag-over-bottom'));
       if (group && parseInt(group.dataset.phaseIdx) !== _treeDragPhaseIdx) {
         const rect = group.getBoundingClientRect();
-        group.classList.add(e.clientY < rect.top + rect.height / 2 ? 'phase-drag-over-top' : 'phase-drag-over-bottom');
+        group.classList.add(e.clientY < rect.top + rect.height / 2
+          ? 'phase-drag-over-top' : 'phase-drag-over-bottom');
       }
     } else if (_treeDragSlideIdx !== null) {
       // Dragging a slide
-      newList.querySelectorAll('.slide-thumb').forEach(t => t.classList.remove('drag-over-top','drag-over-bottom'));
-      newList.querySelectorAll('.phase-slides').forEach(z => z.classList.remove('slide-drag-over'));
+      list.querySelectorAll('.slide-thumb').forEach(t =>
+        t.classList.remove('drag-over-top', 'drag-over-bottom'));
+      list.querySelectorAll('.phase-slides').forEach(z =>
+        z.classList.remove('slide-drag-over'));
       const thumb = e.target.closest('.slide-thumb');
-      const slideZone = e.target.closest('.phase-slides');
       if (thumb && parseInt(thumb.dataset.idx) !== _treeDragSlideIdx) {
         const rect = thumb.getBoundingClientRect();
-        thumb.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drag-over-top' : 'drag-over-bottom');
-      } else if (slideZone && !thumb) {
-        slideZone.classList.add('slide-drag-over');
+        thumb.classList.add(e.clientY < rect.top + rect.height / 2
+          ? 'drag-over-top' : 'drag-over-bottom');
+      } else {
+        // Highlight the phase-slides zone (even if it has slides)
+        const zone = e.target.closest('.phase-slides');
+        if (zone) zone.classList.add('slide-drag-over');
       }
     }
   });
 
   // ── DROP ──
-  newList.addEventListener('drop', e => {
+  list.addEventListener('drop', e => {
     e.preventDefault();
-    newList.querySelectorAll('.phase-group').forEach(g => g.classList.remove('phase-drag-over-top','phase-drag-over-bottom'));
-    newList.querySelectorAll('.slide-thumb').forEach(t => t.classList.remove('drag-over-top','drag-over-bottom'));
-    newList.querySelectorAll('.phase-slides').forEach(z => z.classList.remove('slide-drag-over'));
+    list.querySelectorAll('.phase-group').forEach(g =>
+      g.classList.remove('phase-drag-over-top', 'phase-drag-over-bottom'));
+    list.querySelectorAll('.slide-thumb').forEach(t =>
+      t.classList.remove('drag-over-top', 'drag-over-bottom'));
+    list.querySelectorAll('.phase-slides').forEach(z =>
+      z.classList.remove('slide-drag-over'));
 
     if (_treeDragPhaseIdx !== null) {
-      // Phase drop — reorder all slides belonging to both phases
+      // ── PHASE DROP: reorder all slides in the phase block ──
       const targetGroup = e.target.closest('.phase-group');
       if (!targetGroup) return;
       const targetPi = parseInt(targetGroup.dataset.phaseIdx);
@@ -1817,66 +1851,74 @@ function initTreeDrag() {
       const insertBefore = e.clientY < rect.top + rect.height / 2;
       const targetPhase = phases[targetPi];
 
-      // Figure out the slide index to insert before/after
-      let insertAt;
-      if (insertBefore) {
-        insertAt = targetPhase.slides[0]; // before first slide of target phase
-      } else {
-        insertAt = (targetPhase.slides[targetPhase.slides.length - 1]) + 1; // after last slide of target phase
-      }
+      // Determine insertion point in SLIDES array
+      let insertAt = insertBefore
+        ? targetPhase.slides[0]
+        : targetPhase.slides[targetPhase.slides.length - 1] + 1;
 
-      // Extract src slides from SLIDES array
-      const srcSlideIndices = srcPhase.slides.slice().sort((a, b) => a - b);
-      const srcSlides = srcSlideIndices.map(i => SLIDES[i]);
+      // Extract and remove src slides (sorted high→low to preserve indices)
+      const srcIndices = srcPhase.slides.slice().sort((a, b) => a - b);
+      const srcData = srcIndices.map(i => SLIDES[i]);
+      srcIndices.slice().reverse().forEach(i => SLIDES.splice(i, 1));
 
-      // Remove them (high to low to preserve indices)
-      srcSlideIndices.slice().reverse().forEach(i => SLIDES.splice(i, 1));
+      // Adjust insertAt for removed slides
+      const removedBefore = srcIndices.filter(i => i < insertAt).length;
+      const adjInsert = Math.max(0, Math.min(insertAt - removedBefore, SLIDES.length));
 
-      // Recalculate insertAt after removal
-      const removedBefore = srcSlideIndices.filter(i => i < insertAt).length;
-      const adjustedInsert = Math.max(0, insertAt - removedBefore);
-
-      // Insert
-      SLIDES.splice(adjustedInsert, 0, ...srcSlides);
-
-      // Update currentSlideIdx
+      SLIDES.splice(adjInsert, 0, ...srcData);
       currentSlideIdx = Math.min(currentSlideIdx, SLIDES.length - 1);
-
       renderSidebar(); renderTimeline(); selectSlide(currentSlideIdx); markUnsaved();
 
     } else if (_treeDragSlideIdx !== null) {
-      // Slide drop
+      // ── SLIDE DROP ──
       const thumb = e.target.closest('.slide-thumb');
-      const slideZone = e.target.closest('.phase-slides');
+      const zone  = e.target.closest('.phase-slides');
+
+      if (!thumb && !zone) return;
+
+      pushHistory();
+      const phases = buildPhaseList();
 
       if (thumb) {
-        // Drop onto another slide — reorder
-        let destIdx = parseInt(thumb.dataset.idx);
+        // Drop on a specific slide — insert before/after it
+        const destThumbIdx = parseInt(thumb.dataset.idx);
+        const destPhaseNum = parseInt(thumb.dataset.phaseNum);
         const rect = thumb.getBoundingClientRect();
-        if (e.clientY >= rect.top + rect.height / 2) destIdx++;
-        if (destIdx > _treeDragSlideIdx) destIdx--;
-        if (destIdx === _treeDragSlideIdx) return;
-        pushHistory();
+        const after = e.clientY >= rect.top + rect.height / 2;
+
+        let destSlot = after ? destThumbIdx + 1 : destThumbIdx;
+        if (destSlot > _treeDragSlideIdx) destSlot--;
+        if (destSlot === _treeDragSlideIdx && destPhaseNum === _treeDragSlideSrcPhaseNum) return;
+
+        // Reassign phase if dropping into a different phase
+        const destPhase = phases.find(p => p.phaseNum === destPhaseNum);
+        if (destPhase) {
+          SLIDES[_treeDragSlideIdx].phase = destPhase.phaseNum;
+          SLIDES[_treeDragSlideIdx].phaseName = destPhase.name;
+        }
+
         const [moved] = SLIDES.splice(_treeDragSlideIdx, 1);
-        SLIDES.splice(destIdx, 0, moved);
-        currentSlideIdx = destIdx;
-      } else if (slideZone) {
-        // Drop onto an empty phase zone — reassign phase
-        const targetPhaseNum = parseInt(slideZone.dataset.phaseNum);
-        const phases = buildPhaseList();
-        const targetPhase = phases.find(p => p.phaseNum === targetPhaseNum);
-        if (!targetPhase || !SLIDES[_treeDragSlideIdx]) return;
-        pushHistory();
-        SLIDES[_treeDragSlideIdx].phase = targetPhase.phaseNum;
-        SLIDES[_treeDragSlideIdx].phaseName = targetPhase.name;
-        // Move slide to end of that phase in SLIDES array
+        const adjSlot = Math.max(0, Math.min(destSlot, SLIDES.length));
+        SLIDES.splice(adjSlot, 0, moved);
+        currentSlideIdx = adjSlot;
+
+      } else if (zone) {
+        // Drop on empty phase zone — reassign phase, move to end of that phase
+        const destPhaseNum = parseInt(zone.dataset.phaseNum);
+        if (destPhaseNum === _treeDragSlideSrcPhaseNum) return; // same phase, no-op
+        const destPhase = phases.find(p => p.phaseNum === destPhaseNum);
+        if (!destPhase || !SLIDES[_treeDragSlideIdx]) return;
+
+        SLIDES[_treeDragSlideIdx].phase = destPhase.phaseNum;
+        SLIDES[_treeDragSlideIdx].phaseName = destPhase.name;
+
+        // Move to just after last slide of dest phase
+        const lastInDest = destPhase.slides[destPhase.slides.length - 1];
+        const insertAfter = lastInDest >= _treeDragSlideIdx ? lastInDest : lastInDest + 1;
         const [moved] = SLIDES.splice(_treeDragSlideIdx, 1);
-        const lastInPhase = targetPhase.slides[targetPhase.slides.length - 1];
-        const adjustedDest = lastInPhase >= _treeDragSlideIdx ? lastInPhase : lastInPhase + 1;
-        SLIDES.splice(Math.min(adjustedDest, SLIDES.length), 0, moved);
+        const adj = Math.max(0, Math.min(insertAfter, SLIDES.length));
+        SLIDES.splice(adj, 0, moved);
         currentSlideIdx = SLIDES.indexOf(moved);
-      } else {
-        return;
       }
 
       renderSidebar(); renderTimeline(); selectSlide(currentSlideIdx); markUnsaved();
@@ -1899,7 +1941,7 @@ function selectSlide(idx) {
   populateMetaPanel();
   deselectAll();
   updateTimeline();
-  // Scroll the active thumb into view
+  switchToTab('text');
   const activeThumb = document.querySelector('.slide-thumb.active');
   if (activeThumb) activeThumb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
@@ -1962,7 +2004,9 @@ function renderCanvasElements() {
   if (!s.canvasElements) return;
 
   s.canvasElements.forEach((cel, i) => {
-    if (cel.kind === 'text') createTextDOMElement(cel, i);
+    if (cel.kind === 'eyebrow') createEyebrowElement(cel, i);
+    else if (cel.kind === 'title') createTitleElement(cel, i);
+    else if (cel.kind === 'text') createTextDOMElement(cel, i);
     else if (cel.kind === 'bullet') createBulletListElement(cel, i);
     else if (cel.kind === 'image') createImageDOMElement(cel, i);
     else if (['rect','ellipse','line','arrow'].includes(cel.kind)) createSVGShape(cel, i);
@@ -1979,8 +2023,86 @@ function saveCurrentCanvas() {
       if (tb) cel.content = tb.innerHTML;
     } else if (cel.kind === 'bullet') {
       syncBulletFromDOM(el, idx);
+    } else if (cel.kind === 'eyebrow' || cel.kind === 'title') {
+      const tb = el.querySelector('.text-box-el');
+      if (tb) { cel.content = tb.textContent; }
     }
   });
+}
+
+// Helper: add reveal badge to a wrapper
+function addRevealBadge(wrapper, cel) {
+  if (!cel.reveal) return;
+  const badge = document.createElement('div');
+  badge.className = 'reveal-badge';
+  badge.textContent = '▶ ' + (cel.revealOrder !== undefined ? cel.revealOrder : '?');
+  wrapper.appendChild(badge);
+}
+
+// Helper: shared action bar for simple canvas elements
+function makeActionBar(extraBtns = '') {
+  return `<div class="el-border"></div>
+    <div class="el-actions">
+      ${extraBtns}
+      <button class="el-act-btn" data-act="front">Front</button>
+      <button class="el-act-btn" data-act="back">Back</button>
+      <div class="el-act-sep"></div>
+      <button class="el-act-btn del" data-act="delete">Delete</button>
+    </div>
+    <div class="resize-handle nw" data-dir="nw"></div>
+    <div class="resize-handle ne" data-dir="ne"></div>
+    <div class="resize-handle sw" data-dir="sw"></div>
+    <div class="resize-handle se" data-dir="se"></div>`;
+}
+
+// ── Eyebrow Canvas Element ──
+function createEyebrowElement(cel, idx) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'canvas-element';
+  wrapper.dataset.idx = idx;
+  wrapper.dataset.kind = 'eyebrow';
+  wrapper.style.cssText = `left:${cel.x}px;top:${cel.y}px;min-width:200px;`;
+  wrapper.innerHTML = makeActionBar('<span style="font-size:8px;color:var(--dim);padding:0 4px">dbl-click to edit</span><div class="el-act-sep"></div>');
+  const preview = document.createElement('div');
+  preview.className = 'canvas-eyebrow-preview text-box-el';
+  preview.style.cssText = `font-size:${cel.fontSize||11}px;color:${cel.color||'#c8a44a'}`;
+  preview.textContent = cel.content || '';
+  wrapper.appendChild(preview);
+  addRevealBadge(wrapper, cel);
+  wrapper.addEventListener('dblclick', e => { e.stopPropagation(); preview.contentEditable = 'true'; preview.focus(); });
+  preview.addEventListener('blur', () => {
+    preview.contentEditable = 'false';
+    cel.content = preview.textContent;
+    SLIDES[currentSlideIdx].eyebrow = cel.content;
+    populateMetaPanel(); markUnsaved();
+  });
+  initDOMElement(wrapper, idx);
+  elementsContainer.appendChild(wrapper);
+}
+
+// ── Title Canvas Element ──
+function createTitleElement(cel, idx) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'canvas-element';
+  wrapper.dataset.idx = idx;
+  wrapper.dataset.kind = 'title';
+  wrapper.style.cssText = `left:${cel.x}px;top:${cel.y}px;width:${cel.w||760}px;`;
+  wrapper.innerHTML = makeActionBar('<span style="font-size:8px;color:var(--dim);padding:0 4px">dbl-click to edit</span><div class="el-act-sep"></div>');
+  const preview = document.createElement('div');
+  preview.className = 'canvas-title-preview text-box-el';
+  preview.style.cssText = `font-size:${cel.fontSize||40}px;color:${cel.color||'#f0f6ff'}`;
+  preview.textContent = cel.content || '';
+  wrapper.appendChild(preview);
+  addRevealBadge(wrapper, cel);
+  wrapper.addEventListener('dblclick', e => { e.stopPropagation(); preview.contentEditable = 'true'; preview.focus(); });
+  preview.addEventListener('blur', () => {
+    preview.contentEditable = 'false';
+    cel.content = preview.textContent;
+    SLIDES[currentSlideIdx].title = cel.content;
+    populateMetaPanel(); renderSidebar(); markUnsaved();
+  });
+  initDOMElement(wrapper, idx);
+  elementsContainer.appendChild(wrapper);
 }
 
 // ── Text DOM Element ──
@@ -2007,6 +2129,7 @@ function createTextDOMElement(cel, idx) {
     <div class="resize-handle se" data-dir="se"></div>
     <div class="text-box-el" style="font-size:${cel.fontSize||16}px;color:${cel.color||'#f0f6ff'};font-family:${cel.fontFamily||'Source Serif 4, serif'}">${cel.content||''}</div>
   `;
+  addRevealBadge(wrapper, cel);
   initDOMElement(wrapper, idx);
   elementsContainer.appendChild(wrapper);
 }
@@ -2045,8 +2168,7 @@ function createBulletListElement(cel, idx) {
     <div class="resize-handle se" data-dir="se"></div>
     <div class="bullet-list-el">${buildBulletListHTML(cel)}</div>
   `;
-
-  const bll = wrapper.querySelector('.bullet-list-el');
+  addRevealBadge(wrapper, cel);
 
   // Double-click → enter editing mode
   wrapper.addEventListener('dblclick', e => {
@@ -2506,6 +2628,7 @@ function selectDOMEl(wrapper, idx) {
   deselectAll();
   selectedEl = wrapper;
   wrapper.classList.add('selected');
+  switchToPropsTab();
   showPropsForElement(SLIDES[currentSlideIdx].canvasElements[idx]);
 }
 
@@ -2513,6 +2636,7 @@ function selectSVGEl(el, idx) {
   deselectAll();
   selectedSvgEl = el;
   el.setAttribute('stroke-opacity', '0.7');
+  switchToPropsTab();
   showPropsForElement(SLIDES[currentSlideIdx].canvasElements[idx]);
 }
 
@@ -2536,6 +2660,8 @@ function getStageCoords(e) {
 
 stage.addEventListener('mousedown', e => {
   if (activeTool === 'select') { deselectAll(); return; }
+  if (activeTool === 'eyebrow') { addEyebrowElement(e); return; }
+  if (activeTool === 'title')   { addTitleElement(e); return; }
   if (activeTool === 'text') { addTextBox(e); return; }
   if (activeTool === 'bullet') { addBulletList(e); return; }
   if (activeTool === 'image') { openImagePicker(e); return; }
@@ -2606,6 +2732,49 @@ function updateDrawShape(cel, el, start, cur, idx) {
 }
 
 // ── Add text box ──
+function addEyebrowElement(e) {
+  const s = SLIDES[currentSlideIdx];
+  // If eyebrow already exists just select it
+  const existing = s.canvasElements.findIndex(c => c.kind === 'eyebrow');
+  if (existing >= 0) {
+    const w = elementsContainer.querySelector(`[data-idx="${existing}"]`);
+    if (w) { selectDOMEl(w, existing); showToast('Eyebrow already exists on this slide — selected it', true); }
+    setTool('select'); return;
+  }
+  const raw = getStageCoords(e);
+  const p = snapPos(raw.x, raw.y);
+  pushHistory();
+  const cel = { kind: 'eyebrow', x: p.x, y: p.y, fontSize: 11, color: '#c8a44a', content: s.eyebrow || '' };
+  s.canvasElements.push(cel);
+  renderCanvasElements();
+  const idx = s.canvasElements.length - 1;
+  const wrapper = elementsContainer.querySelector(`[data-idx="${idx}"]`);
+  if (wrapper) { selectDOMEl(wrapper, idx); }
+  populateMetaPanel(); markUnsaved();
+  setTool('select');
+}
+
+function addTitleElement(e) {
+  const s = SLIDES[currentSlideIdx];
+  const existing = s.canvasElements.findIndex(c => c.kind === 'title');
+  if (existing >= 0) {
+    const w = elementsContainer.querySelector(`[data-idx="${existing}"]`);
+    if (w) { selectDOMEl(w, existing); showToast('Title already exists on this slide — selected it', true); }
+    setTool('select'); return;
+  }
+  const raw = getStageCoords(e);
+  const p = snapPos(raw.x, raw.y);
+  pushHistory();
+  const cel = { kind: 'title', x: p.x, y: p.y, w: 760, fontSize: 40, color: '#f0f6ff', content: s.title || '' };
+  s.canvasElements.push(cel);
+  renderCanvasElements();
+  const idx = s.canvasElements.length - 1;
+  const wrapper = elementsContainer.querySelector(`[data-idx="${idx}"]`);
+  if (wrapper) { selectDOMEl(wrapper, idx); }
+  populateMetaPanel(); markUnsaved();
+  setTool('select');
+}
+
 function addTextBox(e) {
   const raw = getStageCoords(e);
   const p = snapPos(raw.x, raw.y);
@@ -2718,7 +2887,48 @@ function showPropsForElement(cel) {
 
   let html = '';
 
-  if (cel.kind === 'bullet') {
+  // ── Reveal toggle (applies to all element kinds) ──
+  const revealChecked = cel.reveal ? 'checked' : '';
+  const revealOrder   = cel.revealOrder !== undefined ? cel.revealOrder : '';
+  html += propGroup('Animation', `
+    <div class="prop-row">
+      <div class="prop-label">Click to reveal</div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="pp-reveal" ${revealChecked} style="width:14px;height:14px;accent-color:var(--green)">
+        <span style="font-size:9px;color:var(--muted)">animate in on click</span>
+      </label>
+    </div>
+    ${propRow('Reveal order', `<input class="prop-input" id="pp-reveal-order" type="number" value="${revealOrder}" min="0" max="99" placeholder="0" ${cel.reveal ? '' : 'disabled'}>`)}
+  `);
+
+  if (cel.kind === 'eyebrow') {
+    html += propGroup('Eyebrow', `
+      ${propRow('Size', `<input class="prop-input" id="pp-fontSize" type="number" value="${cel.fontSize||11}" min="6" max="32">`)}
+      <div class="prop-color-row">
+        <div class="prop-label">Color</div>
+        <div class="prop-color-swatch" id="pp-color-swatch" style="background:${cel.color||'#c8a44a'}"></div>
+        <input type="color" id="pp-color" value="${cel.color||'#c8a44a'}">
+      </div>
+    `);
+    html += propGroup('Position', `
+      ${propRow('X', `<input class="prop-input" id="pp-x" type="number" value="${Math.round(cel.x)}">`)}
+      ${propRow('Y', `<input class="prop-input" id="pp-y" type="number" value="${Math.round(cel.y)}">`)}
+    `);
+  } else if (cel.kind === 'title') {
+    html += propGroup('Title', `
+      ${propRow('Font size', `<input class="prop-input" id="pp-fontSize" type="number" value="${cel.fontSize||40}" min="10" max="120">`)}
+      <div class="prop-color-row">
+        <div class="prop-label">Color</div>
+        <div class="prop-color-swatch" id="pp-color-swatch" style="background:${cel.color||'#f0f6ff'}"></div>
+        <input type="color" id="pp-color" value="${cel.color||'#f0f6ff'}">
+      </div>
+    `);
+    html += propGroup('Position & Size', `
+      ${propRow('X', `<input class="prop-input" id="pp-x" type="number" value="${Math.round(cel.x)}">`)}
+      ${propRow('Y', `<input class="prop-input" id="pp-y" type="number" value="${Math.round(cel.y)}">`)}
+      ${propRow('W', `<input class="prop-input" id="pp-w" type="number" value="${Math.round(cel.w||760)}">`)}
+    `);
+  } else if (cel.kind === 'bullet') {
     html += propGroup('Bullet List', `
       ${propRow('Font size', `<input class="prop-input" id="pp-fontSize" type="number" value="${cel.fontSize||14}" min="8" max="60">`)}
       <div class="prop-color-row">
@@ -2825,6 +3035,25 @@ function bindPropsEvents(cel) {
   const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('input', fn); };
   const bindClick = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
 
+  // Reveal toggle
+  const revealCb = document.getElementById('pp-reveal');
+  const revealOrd = document.getElementById('pp-reveal-order');
+  if (revealCb) {
+    revealCb.addEventListener('change', e => {
+      cel.reveal = e.target.checked;
+      if (cel.reveal && cel.revealOrder === undefined) {
+        // Auto-assign next order number
+        const els = SLIDES[currentSlideIdx].canvasElements;
+        const maxOrder = els.filter(c => c.reveal).reduce((m, c) => Math.max(m, c.revealOrder||0), -1);
+        cel.revealOrder = maxOrder + 1;
+      }
+      if (revealOrd) revealOrd.disabled = !cel.reveal;
+      renderCanvasElements(); markUnsaved();
+      showPropsForElement(cel); // re-render props to update order field
+    });
+  }
+  bind('pp-reveal-order', e => { cel.revealOrder = parseInt(e.target.value)||0; markUnsaved(); });
+
   bind('pp-fontSize', e => { cel.fontSize = parseInt(e.target.value); applyToDOM(); markUnsaved(); });
   bind('pp-font', e => { cel.fontFamily = e.target.value; applyToDOM(); markUnsaved(); });
   bind('pp-x', e => { cel.x = parseInt(e.target.value); applyToDOM(); markUnsaved(); });
@@ -2873,12 +3102,11 @@ function applyToDOM() {
 //  META PANEL (slide text editing)
 // ════════════════════════════════════════════════════════════════
 
-let metaOpen = false;
-
+// "Edit Text" button switches to Text tab in right panel
 document.getElementById('btn-meta').addEventListener('click', () => {
-  metaOpen = !metaOpen;
-  document.getElementById('meta-panel').classList.toggle('open', metaOpen);
-  document.getElementById('btn-meta').classList.toggle('active', metaOpen);
+  switchToTab('text');
+  document.getElementById('btn-meta').classList.toggle('active',
+    document.querySelector('[data-tab="text"]').classList.contains('active'));
 });
 
 // Convert HTML body → plain bullet lines for the textarea
@@ -2929,71 +3157,97 @@ function escLine(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Default positions for eyebrow/title canvas elements
+const DEFAULT_EYEBROW = { x: 48, y: 36, fontSize: 11, color: '#c8a44a' };
+const DEFAULT_TITLE   = { x: 48, y: 64, w: 760, fontSize: 40, color: '#f0f6ff' };
+
+function getOrCreateCanvasEl(slide, kind, defaults) {
+  let cel = slide.canvasElements.find(c => c.kind === kind);
+  if (!cel) {
+    cel = { kind, ...defaults, content: kind === 'eyebrow' ? (slide.eyebrow || '') : (slide.title || '') };
+    slide.canvasElements.push(cel);
+  }
+  return cel;
+}
+
 function populateMetaPanel() {
   const s = SLIDES[currentSlideIdx];
-  document.getElementById('meta-eyebrow').value = stripHTML(s.eyebrow || '');
-  document.getElementById('meta-title').value = stripHTML(s.title || '');
+  const eyeCel   = s.canvasElements.find(c => c.kind === 'eyebrow');
+  const titleCel = s.canvasElements.find(c => c.kind === 'title');
+
+  document.getElementById('meta-eyebrow').value   = eyeCel   ? eyeCel.content          : (s.eyebrow || '');
+  document.getElementById('meta-eyebrow-x').value = eyeCel   ? Math.round(eyeCel.x)    : DEFAULT_EYEBROW.x;
+  document.getElementById('meta-eyebrow-y').value = eyeCel   ? Math.round(eyeCel.y)    : DEFAULT_EYEBROW.y;
+
+  document.getElementById('meta-title').value      = titleCel ? stripHTML(titleCel.content||'') : stripHTML(s.title || '');
+  document.getElementById('meta-title-x').value    = titleCel ? Math.round(titleCel.x)          : DEFAULT_TITLE.x;
+  document.getElementById('meta-title-y').value    = titleCel ? Math.round(titleCel.y)          : DEFAULT_TITLE.y;
+  document.getElementById('meta-title-size').value = titleCel ? (titleCel.fontSize || DEFAULT_TITLE.fontSize) : DEFAULT_TITLE.fontSize;
+
   document.getElementById('meta-notes').value = s.notes || '';
-
-  const bulletTA = document.getElementById('meta-bullets');
-  if (s.type === 'split') {
-    // For split slides show both columns
-    const left = bodyToLines(s.leftBody || '');
-    const right = bodyToLines(s.rightBody || '');
-    bulletTA.value = '[LEFT COLUMN]\n' + left + '\n\n[RIGHT COLUMN]\n' + right;
-    bulletTA.dataset.splitMode = '1';
-  } else {
-    bulletTA.value = bodyToLines(s.body || '');
-    bulletTA.dataset.splitMode = '';
-  }
 }
 
-function applyBulletsToSlide() {
-  const s = SLIDES[currentSlideIdx];
-  const text = document.getElementById('meta-bullets').value;
-  const splitMode = document.getElementById('meta-bullets').dataset.splitMode;
-  if (splitMode === '1') {
-    // Parse [LEFT COLUMN] / [RIGHT COLUMN] blocks
-    const leftMatch = text.match(/\[LEFT COLUMN\]\n([\s\S]*?)(?=\[RIGHT COLUMN\]|$)/i);
-    const rightMatch = text.match(/\[RIGHT COLUMN\]\n([\s\S]*?)$/i);
-    if (leftMatch) s.leftBody = linesToBody(leftMatch[1].trim());
-    if (rightMatch) s.rightBody = linesToBody(rightMatch[1].trim());
-  } else {
-    s.body = linesToBody(text);
-  }
-  renderSlidePreview();
+function applyEyebrowToSlide() {
+  const s   = SLIDES[currentSlideIdx];
+  const cel = getOrCreateCanvasEl(s, 'eyebrow', {...DEFAULT_EYEBROW});
+  cel.content   = document.getElementById('meta-eyebrow').value;
+  cel.x         = parseInt(document.getElementById('meta-eyebrow-x').value) || DEFAULT_EYEBROW.x;
+  cel.y         = parseInt(document.getElementById('meta-eyebrow-y').value) || DEFAULT_EYEBROW.y;
+  s.eyebrow = cel.content;
+  renderCanvasElements(); renderSlidePreview(); renderSidebar(); markUnsaved();
+}
+
+function applyTitleToSlide() {
+  const s   = SLIDES[currentSlideIdx];
+  const cel = getOrCreateCanvasEl(s, 'title', {...DEFAULT_TITLE});
+  cel.content   = document.getElementById('meta-title').value;
+  cel.x         = parseInt(document.getElementById('meta-title-x').value)    || DEFAULT_TITLE.x;
+  cel.y         = parseInt(document.getElementById('meta-title-y').value)    || DEFAULT_TITLE.y;
+  cel.fontSize  = parseInt(document.getElementById('meta-title-size').value) || DEFAULT_TITLE.fontSize;
+  s.title = cel.content;
+  renderCanvasElements(); renderSlidePreview(); renderSidebar(); markUnsaved();
+}
+
+['meta-eyebrow','meta-eyebrow-x','meta-eyebrow-y'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyEyebrowToSlide);
+});
+['meta-title','meta-title-x','meta-title-y','meta-title-size'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyTitleToSlide);
+});
+
+document.getElementById('meta-eyebrow-apply').addEventListener('click', () => {
+  const src = SLIDES[currentSlideIdx].canvasElements.find(c => c.kind === 'eyebrow');
+  if (!src) { showToast('Add an eyebrow to this slide first', false); return; }
+  pushHistory();
+  SLIDES.forEach((s, i) => {
+    if (i === currentSlideIdx) return;
+    let cel = s.canvasElements.find(c => c.kind === 'eyebrow');
+    if (!cel) { cel = { kind: 'eyebrow', ...DEFAULT_EYEBROW, content: s.eyebrow || '' }; s.canvasElements.push(cel); }
+    cel.x = src.x; cel.y = src.y; cel.fontSize = src.fontSize; cel.color = src.color;
+  });
   markUnsaved();
-}
+  showToast('Eyebrow position applied to all ' + SLIDES.length + ' slides', true);
+});
 
-document.getElementById('meta-eyebrow').addEventListener('input', () => {
-  SLIDES[currentSlideIdx].eyebrow = document.getElementById('meta-eyebrow').value;
-  renderSlidePreview(); renderSidebar(); markUnsaved();
+document.getElementById('meta-title-apply').addEventListener('click', () => {
+  const src = SLIDES[currentSlideIdx].canvasElements.find(c => c.kind === 'title');
+  if (!src) { showToast('Add a title to this slide first', false); return; }
+  pushHistory();
+  SLIDES.forEach((s, i) => {
+    if (i === currentSlideIdx) return;
+    let cel = s.canvasElements.find(c => c.kind === 'title');
+    if (!cel) { cel = { kind: 'title', ...DEFAULT_TITLE, content: s.title || '' }; s.canvasElements.push(cel); }
+    cel.x = src.x; cel.y = src.y; cel.w = src.w; cel.fontSize = src.fontSize; cel.color = src.color;
+  });
+  markUnsaved();
+  showToast('Title position applied to all ' + SLIDES.length + ' slides', true);
 });
-document.getElementById('meta-title').addEventListener('input', () => {
-  SLIDES[currentSlideIdx].title = document.getElementById('meta-title').value;
-  renderSlidePreview(); renderSidebar(); markUnsaved();
-});
-document.getElementById('meta-bullets').addEventListener('input', applyBulletsToSlide);
+
 document.getElementById('meta-notes').addEventListener('input', () => {
   SLIDES[currentSlideIdx].notes = document.getElementById('meta-notes').value;
   markUnsaved();
 });
 
-document.getElementById('meta-add-bullet').addEventListener('click', () => {
-  const ta = document.getElementById('meta-bullets');
-  const cur = ta.value;
-  ta.value = cur + (cur && !cur.endsWith('\n') ? '\n' : '') + 'New bullet point';
-  applyBulletsToSlide();
-  ta.focus();
-  ta.setSelectionRange(ta.value.lastIndexOf('New bullet point'), ta.value.length);
-});
-document.getElementById('meta-add-callout').addEventListener('click', () => {
-  const ta = document.getElementById('meta-bullets');
-  const cur = ta.value;
-  ta.value = cur + (cur && !cur.endsWith('\n') ? '\n' : '') + '\nCallout text here';
-  applyBulletsToSlide();
-  ta.focus();
-});
 
 
 // ════════════════════════════════════════════════════════════════
@@ -3001,7 +3255,8 @@ document.getElementById('meta-add-callout').addEventListener('click', () => {
 // ════════════════════════════════════════════════════════════════
 
 const toolButtons = {
-  select: 'tool-select', text: 'tool-text', bullet: 'tool-bullet', image: 'tool-image',
+  select: 'tool-select', eyebrow: 'tool-eyebrow', title: 'tool-title',
+  text: 'tool-text', bullet: 'tool-bullet', image: 'tool-image',
   rect: 'tool-rect', ellipse: 'tool-ellipse', line: 'tool-line', arrow: 'tool-arrow'
 };
 
@@ -3245,21 +3500,16 @@ function showToast(msg, success = true) {
 //  RIGHT PANEL TABS
 // ════════════════════════════════════════════════════════════════
 
+function switchToTab(name) {
+  document.querySelectorAll('.rp-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.rp-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
+}
+
 document.querySelectorAll('.rp-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.rp-pane').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById('pane-' + tab.dataset.tab).classList.add('active');
-  });
+  tab.addEventListener('click', () => switchToTab(tab.dataset.tab));
 });
 
-function switchToPropsTab() {
-  document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.rp-pane').forEach(p => p.classList.remove('active'));
-  document.querySelector('[data-tab="props"]').classList.add('active');
-  document.getElementById('pane-props').classList.add('active');
-}
+function switchToPropsTab() { switchToTab('props'); }
 
 // ════════════════════════════════════════════════════════════════
 //  UNDO / REDO
