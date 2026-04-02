@@ -1953,6 +1953,16 @@ function selectSlide(idx) {
 function renderSlidePreview() {
   const s = SLIDES[currentSlideIdx];
   const prev = document.getElementById('slide-content-preview');
+
+  // Canvas mode — eyebrow/title/body are canvas elements, hide the static preview layer
+  const hasCanvasEyebrow = s.canvasElements && s.canvasElements.some(c => c.kind === 'eyebrow');
+  const hasCanvasTitle   = s.canvasElements && s.canvasElements.some(c => c.kind === 'title');
+  if (hasCanvasEyebrow || hasCanvasTitle) {
+    prev.innerHTML = '';
+    prev.className = '';
+    return;
+  }
+
   prev.className = s.type === 'title' ? 'title-type' : '';
 
   let html = '';
