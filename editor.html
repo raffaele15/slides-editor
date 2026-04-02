@@ -1727,6 +1727,11 @@ function loadHTML(src) {
   try {
     SLIDES = (new Function('return ' + rawArray))();
     SLIDES.forEach(s => { if (!s.canvasElements) s.canvasElements = []; });
+    // Clear stale canvas DOM so saveCurrentCanvas() in selectSlide doesn't
+    // overwrite the newly loaded slides with the previous presentation's content
+    elementsContainer.innerHTML = '';
+    svgCanvas.innerHTML = '';
+    currentSlideIdx = 0;
     document.getElementById('empty-state').classList.add('hidden');
     document.getElementById('file-label').textContent = fileName;
     document.getElementById('file-label').classList.add('loaded');
@@ -1829,7 +1834,7 @@ function renderSidebar() {
     header.dataset.phaseIdx = pi;
     header.dataset.phaseNum = phase.phaseNum;
     header.innerHTML = `
-      <span class="pg-drag-handle" draggable="true" data-drag-phase="1" title="Drag to reorder phase">⠿</span>
+      <span class="pg-drag-handle" title="Drag to reorder phase">⠿</span>
       <span class="pg-toggle" data-toggle="${phase.phaseNum}">▾</span>
       <span class="pg-num">P${pi + 1}</span>
       <input class="pg-name-input" value="${phase.name}" placeholder="Phase name">
@@ -1850,6 +1855,12 @@ function renderSidebar() {
     nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') nameInput.blur(); });
 
     group.appendChild(header);
+    // Attach direct mousedown to the drag handle (not delegated, for reliability)
+    header.querySelector('.pg-drag-handle').addEventListener('mousedown', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      startPhaseDrag(ev, pi, phase.phaseNum);
+    });
 
     const slidesContainer = document.createElement('div');
     slidesContainer.className = 'phase-slides';
@@ -1909,6 +1920,99 @@ function handleSlideAction(act, idx) {
     markUnsaved();
     showToast('Slide deleted', true);
   }
+}
+
+// ── Phase drag (mousedown/mousemove — more reliable than HTML5 drag API) ──
+function startPhaseDrag(e, srcPi, srcPhaseNum) {
+  const list = document.getElementById('slide-list');
+  const srcGroup = list.querySelector(`.phase-group[data-phase-num="${srcPhaseNum}"]`);
+  if (!srcGroup) return;
+
+  // Ghost: a floating copy of the header
+  const ghost = document.createElement('div');
+  ghost.style.cssText = `
+    position:fixed; pointer-events:none; z-index:9999; opacity:0.85;
+    background:rgba(37,88,168,0.4); border:1px solid var(--blue-400);
+    border-radius:5px; padding:5px 10px;
+    font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--white);
+    white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,0.5);
+    transform:translate(-50%,-50%);
+  `;
+  ghost.textContent = '⠿ ' + (srcGroup.querySelector('.pg-name-input')?.value || 'Phase');
+  document.body.appendChild(ghost);
+
+  srcGroup.classList.add('dragging');
+  document.body.style.userSelect = 'none';
+  document.body.style.cursor = 'grabbing';
+
+  let lastTargetNum = null;
+
+  const onMove = ev => {
+    ghost.style.left = ev.clientX + 'px';
+    ghost.style.top  = ev.clientY + 'px';
+
+    // Clear all indicators
+    list.querySelectorAll('.phase-group').forEach(g =>
+      g.classList.remove('phase-drag-over-top', 'phase-drag-over-bottom'));
+
+    // Find which phase group is under the cursor
+    const els = list.querySelectorAll('.phase-group:not(.dragging)');
+    for (const g of els) {
+      const rect = g.getBoundingClientRect();
+      if (ev.clientY >= rect.top && ev.clientY <= rect.bottom) {
+        lastTargetNum = parseInt(g.dataset.phaseNum);
+        const mid = rect.top + rect.height / 2;
+        g.classList.add(ev.clientY < mid ? 'phase-drag-over-top' : 'phase-drag-over-bottom');
+        break;
+      }
+    }
+  };
+
+  const onUp = ev => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    ghost.remove();
+    srcGroup.classList.remove('dragging');
+    list.querySelectorAll('.phase-group').forEach(g =>
+      g.classList.remove('phase-drag-over-top', 'phase-drag-over-bottom'));
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+
+    if (lastTargetNum === null || lastTargetNum === srcPhaseNum) return;
+
+    // Find drop position
+    const targetGroup = list.querySelector(`.phase-group[data-phase-num="${lastTargetNum}"]`);
+    if (!targetGroup) return;
+    const rect = targetGroup.getBoundingClientRect();
+    const insertBefore = ev.clientY < rect.top + rect.height / 2;
+
+    pushHistory();
+    const phases = buildPhaseList();
+    const srcPhase    = phases.find(p => p.phaseNum === srcPhaseNum);
+    const targetPhase = phases.find(p => p.phaseNum === lastTargetNum);
+    if (!srcPhase || !targetPhase) return;
+
+    let insertAt = insertBefore
+      ? targetPhase.slides[0]
+      : targetPhase.slides[targetPhase.slides.length - 1] + 1;
+
+    const srcIndices = srcPhase.slides.slice().sort((a, b) => a - b);
+    const srcData    = srcIndices.map(i => SLIDES[i]);
+    srcIndices.slice().reverse().forEach(i => SLIDES.splice(i, 1));
+
+    const removedBefore = srcIndices.filter(i => i < insertAt).length;
+    const adjInsert = Math.max(0, Math.min(insertAt - removedBefore, SLIDES.length));
+    SLIDES.splice(adjInsert, 0, ...srcData);
+
+    currentSlideIdx = Math.min(currentSlideIdx, SLIDES.length - 1);
+    renderSidebar(); renderTimeline(); selectSlide(currentSlideIdx); markUnsaved();
+    showToast('Phase moved', true);
+  };
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+  // Trigger first move to position ghost
+  onMove(e);
 }
 
 // ── Unified tree drag — single delegated listener, set up once ──
@@ -1998,23 +2102,10 @@ function initTreeDrag() {
     }
   });
 
-  // ── DRAGSTART ──
+  // ── DRAGSTART — slides only (phases use mousedown/mousemove) ──
   list.addEventListener('dragstart', e => {
-    const dragHandle = e.target.closest('[data-drag-phase]');
-    const thumb = !dragHandle && e.target.closest('.slide-thumb');
-    if (dragHandle) {
-      const header = dragHandle.closest('.phase-group-header');
-      const group  = dragHandle.closest('.phase-group');
-      if (!header || !group) return;
-      _treeDragPhaseIdx    = parseInt(header.dataset.phaseIdx);
-      _treeDragSrcPhaseNum = parseInt(group.dataset.phaseNum);
-      _treeDragSlideIdx = null;
-      _treeDragSlideSrcPhaseNum = null;
-      group.classList.add('dragging');
-      group.dataset.dragging = '1';
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', 'phase:' + _treeDragPhaseIdx);
-    } else if (thumb) {
+    const thumb = e.target.closest('.slide-thumb');
+    if (thumb) {
       _treeDragSlideIdx = parseInt(thumb.dataset.idx);
       _treeDragSlideSrcPhaseNum = parseInt(thumb.dataset.phaseNum);
       _treeDragPhaseIdx = null;
@@ -2024,10 +2115,8 @@ function initTreeDrag() {
     }
   });
 
-  // ── DRAGEND ──
+  // ── DRAGEND — slides only ──
   list.addEventListener('dragend', () => {
-    list.querySelectorAll('.phase-group').forEach(g =>
-      g.classList.remove('dragging', 'phase-drag-over-top', 'phase-drag-over-bottom'));
     list.querySelectorAll('.slide-thumb').forEach(t =>
       t.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom'));
     list.querySelectorAll('.phase-slides').forEach(z =>
@@ -2038,20 +2127,10 @@ function initTreeDrag() {
     _treeDragSrcPhaseNum = null;
   });
 
-  // ── DRAGOVER ──
+  // ── DRAGOVER — slides only ──
   list.addEventListener('dragover', e => {
     e.preventDefault();
-    if (_treeDragPhaseIdx !== null) {
-      // Dragging a phase — highlight target phase group
-      list.querySelectorAll('.phase-group').forEach(g =>
-        g.classList.remove('phase-drag-over-top', 'phase-drag-over-bottom'));
-      const group = e.target.closest('.phase-group');
-      if (group && parseInt(group.dataset.phaseIdx) !== _treeDragPhaseIdx) {
-        const rect = group.getBoundingClientRect();
-        group.classList.add(e.clientY < rect.top + rect.height / 2
-          ? 'phase-drag-over-top' : 'phase-drag-over-bottom');
-      }
-    } else if (_treeDragSlideIdx !== null) {
+    if (_treeDragSlideIdx !== null) {
       // Dragging a slide
       list.querySelectorAll('.slide-thumb').forEach(t =>
         t.classList.remove('drag-over-top', 'drag-over-bottom'));
@@ -2070,52 +2149,15 @@ function initTreeDrag() {
     }
   });
 
-  // ── DROP ──
+  // ── DROP — slides only (phases handled by startPhaseDrag mouseup) ──
   list.addEventListener('drop', e => {
     e.preventDefault();
-    list.querySelectorAll('.phase-group').forEach(g =>
-      g.classList.remove('phase-drag-over-top', 'phase-drag-over-bottom'));
     list.querySelectorAll('.slide-thumb').forEach(t =>
       t.classList.remove('drag-over-top', 'drag-over-bottom'));
     list.querySelectorAll('.phase-slides').forEach(z =>
       z.classList.remove('slide-drag-over'));
 
-    if (_treeDragPhaseIdx !== null) {
-      // ── PHASE DROP ──
-      const srcPhaseNum = _treeDragSrcPhaseNum;
-      // Clean up dragging marker
-      const draggingGroup = list.querySelector('.phase-group[data-dragging="1"]');
-      if (draggingGroup) delete draggingGroup.dataset.dragging;
-
-      if (isNaN(srcPhaseNum)) return;
-      const targetGroup = e.target.closest('.phase-group');
-      if (!targetGroup) return;
-      const targetPhaseNum = parseInt(targetGroup.dataset.phaseNum);
-      if (targetPhaseNum === srcPhaseNum) return;
-
-      pushHistory();
-      const phases = buildPhaseList();
-      const srcPhase    = phases.find(p => p.phaseNum === srcPhaseNum);
-      const targetPhase = phases.find(p => p.phaseNum === targetPhaseNum);
-      if (!srcPhase || !targetPhase) return;
-
-      const rect = targetGroup.getBoundingClientRect();
-      const insertBefore = e.clientY < rect.top + rect.height / 2;
-      let insertAt = insertBefore
-        ? targetPhase.slides[0]
-        : targetPhase.slides[targetPhase.slides.length - 1] + 1;
-
-      const srcIndices = srcPhase.slides.slice().sort((a, b) => a - b);
-      const srcData = srcIndices.map(i => SLIDES[i]);
-      srcIndices.slice().reverse().forEach(i => SLIDES.splice(i, 1));
-
-      const removedBefore = srcIndices.filter(i => i < insertAt).length;
-      const adjInsert = Math.max(0, Math.min(insertAt - removedBefore, SLIDES.length));
-      SLIDES.splice(adjInsert, 0, ...srcData);
-      currentSlideIdx = Math.min(currentSlideIdx, SLIDES.length - 1);
-      renderSidebar(); renderTimeline(); selectSlide(currentSlideIdx); markUnsaved();
-
-    } else if (_treeDragSlideIdx !== null) {
+    if (_treeDragSlideIdx !== null) {
       // ── SLIDE DROP ──
       const thumb = e.target.closest('.slide-thumb');
       const zone  = e.target.closest('.phase-slides');
@@ -4366,10 +4408,13 @@ function createNewPresentation() {
   document.getElementById('file-label').classList.add('loaded');
   document.getElementById('slide-count').textContent = SLIDES.length + ' slides';
   document.getElementById('new-pres-modal').classList.remove('open');
+  // Clear stale DOM from any previously loaded presentation
+  elementsContainer.innerHTML = '';
+  svgCanvas.innerHTML = '';
+  currentSlideIdx = 0;
   renderSidebar(); renderTimeline();
   selectSlide(0); initTreeDrag();
   switchToTab('text');
-  // Seed history
   pushHistory();
   markUnsaved();
   showToast('Created "' + title + '" — ' + newSlides.length + ' slides', true);
