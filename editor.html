@@ -2083,8 +2083,8 @@ function stripHTML(h) {
 }
 
 function selectSlide(idx) {
-  currentSlideIdx = idx;
-  saveCurrentCanvas();
+  saveCurrentCanvas();           // save while currentSlideIdx still points at the old slide
+  currentSlideIdx = idx;         // NOW switch
   document.querySelectorAll('.slide-thumb').forEach((t) => {
     t.classList.toggle('active', parseInt(t.dataset.idx) === idx);
   });
@@ -3365,29 +3365,65 @@ function populateMetaPanel() {
 function applyEyebrowToSlide() {
   const s   = SLIDES[currentSlideIdx];
   const cel = getOrCreateCanvasEl(s, 'eyebrow', {...DEFAULT_EYEBROW});
-  cel.content   = document.getElementById('meta-eyebrow').value;
-  cel.x         = parseInt(document.getElementById('meta-eyebrow-x').value) || DEFAULT_EYEBROW.x;
-  cel.y         = parseInt(document.getElementById('meta-eyebrow-y').value) || DEFAULT_EYEBROW.y;
-  s.eyebrow = cel.content;
+  cel.content = document.getElementById('meta-eyebrow').value;
+  cel.x       = parseInt(document.getElementById('meta-eyebrow-x').value) || DEFAULT_EYEBROW.x;
+  cel.y       = parseInt(document.getElementById('meta-eyebrow-y').value) || DEFAULT_EYEBROW.y;
+  s.eyebrow   = cel.content;
   renderCanvasElements(); renderSlidePreview(); renderSidebar(); markUnsaved();
+}
+
+function applyEyebrowPositionOnly() {
+  const s   = SLIDES[currentSlideIdx];
+  const cel = getOrCreateCanvasEl(s, 'eyebrow', {...DEFAULT_EYEBROW});
+  // Do NOT touch cel.content — only update position
+  cel.x = parseInt(document.getElementById('meta-eyebrow-x').value) || DEFAULT_EYEBROW.x;
+  cel.y = parseInt(document.getElementById('meta-eyebrow-y').value) || DEFAULT_EYEBROW.y;
+  renderCanvasElements(); markUnsaved();
 }
 
 function applyTitleToSlide() {
   const s   = SLIDES[currentSlideIdx];
   const cel = getOrCreateCanvasEl(s, 'title', {...DEFAULT_TITLE});
-  cel.content   = document.getElementById('meta-title').value;
-  cel.x         = parseInt(document.getElementById('meta-title-x').value)    || DEFAULT_TITLE.x;
-  cel.y         = parseInt(document.getElementById('meta-title-y').value)    || DEFAULT_TITLE.y;
-  cel.fontSize  = parseInt(document.getElementById('meta-title-size').value) || DEFAULT_TITLE.fontSize;
-  s.title = cel.content;
+  cel.content  = document.getElementById('meta-title').value;
+  cel.x        = parseInt(document.getElementById('meta-title-x').value)    || DEFAULT_TITLE.x;
+  cel.y        = parseInt(document.getElementById('meta-title-y').value)    || DEFAULT_TITLE.y;
+  cel.fontSize = parseInt(document.getElementById('meta-title-size').value) || DEFAULT_TITLE.fontSize;
+  s.title      = cel.content;
   renderCanvasElements(); renderSlidePreview(); renderSidebar(); markUnsaved();
 }
 
-['meta-eyebrow','meta-eyebrow-x','meta-eyebrow-y'].forEach(id => {
-  document.getElementById(id).addEventListener('input', applyEyebrowToSlide);
+function applyTitlePositionOnly() {
+  const s   = SLIDES[currentSlideIdx];
+  const cel = getOrCreateCanvasEl(s, 'title', {...DEFAULT_TITLE});
+  // Do NOT touch cel.content — only update position/size
+  cel.x        = parseInt(document.getElementById('meta-title-x').value)    || DEFAULT_TITLE.x;
+  cel.y        = parseInt(document.getElementById('meta-title-y').value)    || DEFAULT_TITLE.y;
+  cel.fontSize = parseInt(document.getElementById('meta-title-size').value) || DEFAULT_TITLE.fontSize;
+  renderCanvasElements(); markUnsaved();
+}
+
+// Text fields: update content only for current slide
+document.getElementById('meta-eyebrow').addEventListener('input', () => {
+  const s   = SLIDES[currentSlideIdx];
+  const cel = getOrCreateCanvasEl(s, 'eyebrow', {...DEFAULT_EYEBROW});
+  cel.content = document.getElementById('meta-eyebrow').value;
+  s.eyebrow   = cel.content;
+  renderCanvasElements(); renderSlidePreview(); renderSidebar(); markUnsaved();
 });
-['meta-title','meta-title-x','meta-title-y','meta-title-size'].forEach(id => {
-  document.getElementById(id).addEventListener('input', applyTitleToSlide);
+document.getElementById('meta-title').addEventListener('input', () => {
+  const s   = SLIDES[currentSlideIdx];
+  const cel = getOrCreateCanvasEl(s, 'title', {...DEFAULT_TITLE});
+  cel.content = document.getElementById('meta-title').value;
+  s.title     = cel.content;
+  renderCanvasElements(); renderSlidePreview(); renderSidebar(); markUnsaved();
+});
+
+// Position fields: update position only, never touch content
+['meta-eyebrow-x','meta-eyebrow-y'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyEyebrowPositionOnly);
+});
+['meta-title-x','meta-title-y','meta-title-size'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyTitlePositionOnly);
 });
 
 // ── Apply position helpers — position only, text stays per-slide ──
