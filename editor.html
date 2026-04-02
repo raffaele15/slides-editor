@@ -707,6 +707,86 @@ textarea.meta-input { height: 70px; }
 .etl-dot.visited { background: var(--blue-400); }
 .etl-dot.current { background: var(--gold); transform: scale(1.2); }
 
+/* ── Apply-to dropdown ── */
+.apply-dropdown { position: relative; display: inline-flex; }
+.apply-menu {
+  display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 500;
+  background: var(--navy-800); border: 1px solid var(--navy-500);
+  border-radius: 6px; padding: 4px; min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+.apply-dropdown.open .apply-menu { display: block; }
+.apply-opt {
+  display: block; width: 100%; padding: 6px 10px; text-align: left;
+  background: none; border: none; border-radius: 4px;
+  color: var(--blue-100); font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.04em; cursor: pointer; transition: background 0.12s;
+}
+.apply-opt:hover { background: rgba(37,88,168,0.25); color: var(--white); }
+
+/* ── Pick-slides modal ── */
+#pick-slides-modal {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(2,8,16,0.85); align-items: center; justify-content: center;
+}
+#pick-slides-modal.open { display: flex; }
+.psm-box {
+  background: var(--navy-800); border: 1px solid var(--navy-500);
+  border-radius: 10px; width: 420px; max-height: 80vh;
+  display: flex; flex-direction: column; box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+}
+.psm-head { padding: 14px 18px 10px; border-bottom: 1px solid var(--navy-600); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.psm-title { font-family: 'DM Serif Display', serif; font-size: 15px; color: var(--white); }
+.psm-sub { font-size: 9px; color: var(--dim); margin-top: 2px; }
+.psm-close { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.psm-close:hover { color: var(--white); }
+.psm-list { flex: 1; overflow-y: auto; padding: 8px 12px; }
+.psm-list::-webkit-scrollbar { width: 3px; }
+.psm-list::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 2px; }
+.psm-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 5px; cursor: pointer; border: 1px solid transparent; margin-bottom: 2px; transition: all 0.12s; }
+.psm-row:hover { background: rgba(37,88,168,0.12); border-color: var(--navy-600); }
+.psm-row.current { opacity: 0.4; pointer-events: none; }
+.psm-row input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--green); flex-shrink: 0; cursor: pointer; }
+.psm-row-num { font-size: 9px; color: var(--dim); min-width: 20px; font-family: 'IBM Plex Mono', monospace; }
+.psm-row-info { flex: 1; overflow: hidden; }
+.psm-row-title { font-size: 10px; color: var(--blue-100); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psm-row-phase { font-size: 8px; color: var(--dim); }
+.psm-foot { padding: 10px 14px; border-top: 1px solid var(--navy-600); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+.psm-sel-btn { font-size: 9px; color: var(--muted); cursor: pointer; background: none; border: none; padding: 3px 6px; border-radius: 3px; font-family: 'IBM Plex Mono', monospace; }
+.psm-sel-btn:hover { color: var(--white); background: rgba(37,88,168,0.2); }
+.psm-apply-btn { padding: 7px 18px; border-radius: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; cursor: pointer; border: none; background: var(--green); color: #020810; font-weight: 500; }
+.psm-apply-btn:hover { background: #5ddfaa; }
+
+/* ── New Presentation modal ── */
+#new-pres-modal { display: none; position: fixed; inset: 0; z-index: 600; background: rgba(2,8,16,0.88); align-items: center; justify-content: center; }
+#new-pres-modal.open { display: flex; }
+.npm-box { background: var(--navy-800); border: 1px solid var(--navy-500); border-radius: 10px; width: 480px; box-shadow: 0 24px 64px rgba(0,0,0,0.7); overflow: hidden; }
+.npm-head { padding: 20px 24px 14px; border-bottom: 1px solid var(--navy-600); display: flex; align-items: center; justify-content: space-between; }
+.npm-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--white); }
+.npm-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.npm-close:hover { color: var(--white); }
+.npm-body { padding: 20px 24px; }
+.npm-field { margin-bottom: 14px; }
+.npm-label { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.npm-input { width: 100%; background: var(--navy-700); border: 1px solid var(--navy-600); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 8px 10px; border-radius: 5px; }
+.npm-input:focus { outline: none; border-color: var(--green); }
+.npm-phases { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+.npm-phases::-webkit-scrollbar { width: 3px; }
+.npm-phases::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 2px; }
+.npm-phase-row { display: flex; gap: 6px; align-items: center; }
+.npm-phase-input { flex: 1; background: var(--navy-700); border: 1px solid var(--navy-600); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 6px 8px; border-radius: 4px; }
+.npm-phase-input:focus { outline: none; border-color: var(--blue-400); }
+.npm-phase-del { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 14px; padding: 2px 5px; border-radius: 3px; }
+.npm-phase-del:hover { color: var(--red); background: var(--red-dim); }
+.npm-add-phase { font-size: 9px; color: var(--muted); background: none; border: 1px dashed var(--navy-500); border-radius: 4px; padding: 5px 10px; cursor: pointer; width: 100%; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+.npm-add-phase:hover { border-color: var(--blue-400); color: var(--white); }
+.npm-foot { padding: 14px 24px; border-top: 1px solid var(--navy-600); display: flex; justify-content: flex-end; gap: 8px; }
+.npm-btn { padding: 9px 20px; border-radius: 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; cursor: pointer; border: none; transition: all 0.15s; }
+.npm-btn.cancel { background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--navy-600); }
+.npm-btn.cancel:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+.npm-btn.create { background: var(--green); color: #020810; font-weight: 500; }
+.npm-btn.create:hover { background: #5ddfaa; }
+
 /* Reveal badge on canvas elements */
 .reveal-badge {
   position: absolute; top: -10px; right: -6px; z-index: 30;
@@ -1099,6 +1179,10 @@ textarea.meta-input { height: 70px; }
     Slide Editor
   </div>
   <div class="tb-sep"></div>
+  <button class="tb-btn" id="btn-new">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    New
+  </button>
   <button class="tb-btn" id="btn-open">
     <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
     Open HTML
@@ -1302,7 +1386,14 @@ textarea.meta-input { height: 70px; }
         <div class="meta-field">
           <div class="meta-label" style="display:flex;align-items:center;justify-content:space-between">
             Eyebrow
-            <button class="meta-mini-btn" id="meta-eyebrow-apply" title="Copy position to all slides" style="font-size:8px">⇒ All slides</button>
+            <div class="apply-dropdown" id="eyebrow-apply-wrap">
+              <button class="meta-mini-btn apply-trigger" data-kind="eyebrow" style="font-size:8px">⇒ Apply to ▾</button>
+              <div class="apply-menu">
+                <button class="apply-opt" data-kind="eyebrow" data-scope="all">All slides</button>
+                <button class="apply-opt" data-kind="eyebrow" data-scope="phase">Same phase</button>
+                <button class="apply-opt" data-kind="eyebrow" data-scope="pick">Pick slides…</button>
+              </div>
+            </div>
           </div>
           <input class="meta-input" id="meta-eyebrow" type="text" placeholder="Phase 01 — Introduction">
           <div style="display:flex;gap:4px;margin-top:4px">
@@ -1313,7 +1404,14 @@ textarea.meta-input { height: 70px; }
         <div class="meta-field">
           <div class="meta-label" style="display:flex;align-items:center;justify-content:space-between">
             Title
-            <button class="meta-mini-btn" id="meta-title-apply" title="Copy position to all slides" style="font-size:8px">⇒ All slides</button>
+            <div class="apply-dropdown" id="title-apply-wrap">
+              <button class="meta-mini-btn apply-trigger" data-kind="title" style="font-size:8px">⇒ Apply to ▾</button>
+              <div class="apply-menu">
+                <button class="apply-opt" data-kind="title" data-scope="all">All slides</button>
+                <button class="apply-opt" data-kind="title" data-scope="phase">Same phase</button>
+                <button class="apply-opt" data-kind="title" data-scope="pick">Pick slides…</button>
+              </div>
+            </div>
           </div>
           <input class="meta-input" id="meta-title" type="text" placeholder="Slide Title">
           <div style="display:flex;gap:4px;margin-top:4px">
@@ -1390,12 +1488,18 @@ textarea.meta-input { height: 70px; }
 <!-- ── EMPTY STATE ── -->
 <div id="empty-state">
   <div class="es-icon">📄</div>
-  <div class="es-title">Open your presentation</div>
-  <div class="es-sub">Load your <strong>lab-presentation.html</strong> file to start editing slides. Add shapes, text boxes, and images on top of each slide.</div>
-  <button class="es-btn" id="es-open-btn">
-    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-    Choose HTML file
-  </button>
+  <div class="es-title">Lab Slide Editor</div>
+  <div class="es-sub">Create a new presentation or load an existing one to start editing.</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <button class="es-btn" id="es-new-btn">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      New Presentation
+    </button>
+    <button class="es-btn" id="es-open-btn" style="background:transparent;border:1px solid var(--green);color:var(--green)">
+      <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      Open HTML file
+    </button>
+  </div>
 </div>
 
 <!-- ── GOOGLE DRIVE MODAL ── -->
@@ -1416,6 +1520,53 @@ textarea.meta-input { height: 70px; }
     <div class="dm-btns">
       <button class="dm-btn cancel" id="drive-cancel">Cancel</button>
       <button class="dm-btn ok" id="drive-ok">Add Image</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PICK SLIDES MODAL ── -->
+<div id="pick-slides-modal">
+  <div class="psm-box">
+    <div class="psm-head">
+      <div>
+        <div class="psm-title" id="psm-title">Apply position to…</div>
+        <div class="psm-sub">Tick slides to update. Position only — text stays per-slide.</div>
+      </div>
+      <button class="psm-close" id="psm-close">✕</button>
+    </div>
+    <div class="psm-list" id="psm-list"></div>
+    <div class="psm-foot">
+      <div style="display:flex;gap:6px">
+        <button class="psm-sel-btn" id="psm-sel-all">All</button>
+        <button class="psm-sel-btn" id="psm-sel-none">None</button>
+        <button class="psm-sel-btn" id="psm-sel-phase">Same phase</button>
+      </div>
+      <button class="psm-apply-btn" id="psm-apply">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEW PRESENTATION MODAL ── -->
+<div id="new-pres-modal">
+  <div class="npm-box">
+    <div class="npm-head">
+      <div class="npm-title">New Presentation</div>
+      <button class="npm-close" id="npm-close">✕</button>
+    </div>
+    <div class="npm-body">
+      <div class="npm-field">
+        <div class="npm-label">Presentation title</div>
+        <input class="npm-input" id="npm-pres-title" type="text" placeholder="My Lab Experiment — 2025">
+      </div>
+      <div class="npm-field">
+        <div class="npm-label">Phases <span style="color:var(--dim);font-size:8px;text-transform:none;letter-spacing:0">(one slide will be created per phase)</span></div>
+        <div class="npm-phases" id="npm-phases-list"></div>
+        <button class="npm-add-phase" id="npm-add-phase">+ Add phase</button>
+      </div>
+    </div>
+    <div class="npm-foot">
+      <button class="npm-btn cancel" id="npm-cancel">Cancel</button>
+      <button class="npm-btn create" id="npm-create">Create Presentation</button>
     </div>
   </div>
 </div>
@@ -1770,6 +1921,8 @@ function initTreeDrag() {
       header.closest('.phase-group').classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', 'phase:' + _treeDragPhaseIdx);
+      // Store phaseNum on the group element for lookup during drop
+      header.closest('.phase-group').dataset.dragging = '1';
     } else if (thumb) {
       _treeDragSlideIdx = parseInt(thumb.dataset.idx);
       _treeDragSlideSrcPhaseNum = parseInt(thumb.dataset.phaseNum);
@@ -1836,35 +1989,34 @@ function initTreeDrag() {
       z.classList.remove('slide-drag-over'));
 
     if (_treeDragPhaseIdx !== null) {
-      // ── PHASE DROP: reorder all slides in the phase block ──
+      // ── PHASE DROP ──
+      const draggingGroup = list.querySelector('.phase-group[data-dragging="1"]');
+      const srcPhaseNum = draggingGroup ? parseInt(draggingGroup.dataset.phaseNum) : NaN;
+      if (draggingGroup) delete draggingGroup.dataset.dragging;
+
       const targetGroup = e.target.closest('.phase-group');
-      if (!targetGroup) return;
-      const targetPi = parseInt(targetGroup.dataset.phaseIdx);
-      if (targetPi === _treeDragPhaseIdx) return;
+      if (!targetGroup || isNaN(srcPhaseNum)) return;
+      const targetPhaseNum = parseInt(targetGroup.dataset.phaseNum);
+      if (targetPhaseNum === srcPhaseNum) return;
 
       pushHistory();
       const phases = buildPhaseList();
-      const srcPhase = phases[_treeDragPhaseIdx];
-      if (!srcPhase) return;
+      const srcPhase    = phases.find(p => p.phaseNum === srcPhaseNum);
+      const targetPhase = phases.find(p => p.phaseNum === targetPhaseNum);
+      if (!srcPhase || !targetPhase) return;
 
       const rect = targetGroup.getBoundingClientRect();
       const insertBefore = e.clientY < rect.top + rect.height / 2;
-      const targetPhase = phases[targetPi];
-
-      // Determine insertion point in SLIDES array
       let insertAt = insertBefore
         ? targetPhase.slides[0]
         : targetPhase.slides[targetPhase.slides.length - 1] + 1;
 
-      // Extract and remove src slides (sorted high→low to preserve indices)
       const srcIndices = srcPhase.slides.slice().sort((a, b) => a - b);
       const srcData = srcIndices.map(i => SLIDES[i]);
       srcIndices.slice().reverse().forEach(i => SLIDES.splice(i, 1));
 
-      // Adjust insertAt for removed slides
       const removedBefore = srcIndices.filter(i => i < insertAt).length;
       const adjInsert = Math.max(0, Math.min(insertAt - removedBefore, SLIDES.length));
-
       SLIDES.splice(adjInsert, 0, ...srcData);
       currentSlideIdx = Math.min(currentSlideIdx, SLIDES.length - 1);
       renderSidebar(); renderTimeline(); selectSlide(currentSlideIdx); markUnsaved();
@@ -2500,6 +2652,7 @@ function startDrag(e, wrapper, idx) {
   isDragging = true;
   const startX = e.clientX, startY = e.clientY;
   const startLeft = parseInt(wrapper.style.left), startTop = parseInt(wrapper.style.top);
+  const kind = wrapper.dataset.kind;
   const onMove = ev => {
     const scale = 1 / zoomLevel;
     let nx = startLeft + (ev.clientX - startX) * scale;
@@ -2508,6 +2661,18 @@ function startDrag(e, wrapper, idx) {
     wrapper.style.left = snapped.x + 'px';
     wrapper.style.top  = snapped.y + 'px';
     showSnapIndicators(nx, ny);
+    // Live-update x/y fields in Text tab for eyebrow and title
+    if (kind === 'eyebrow') {
+      const xEl = document.getElementById('meta-eyebrow-x');
+      const yEl = document.getElementById('meta-eyebrow-y');
+      if (xEl) xEl.value = Math.round(snapped.x);
+      if (yEl) yEl.value = Math.round(snapped.y);
+    } else if (kind === 'title') {
+      const xEl = document.getElementById('meta-title-x');
+      const yEl = document.getElementById('meta-title-y');
+      if (xEl) xEl.value = Math.round(snapped.x);
+      if (yEl) yEl.value = Math.round(snapped.y);
+    }
   };
   const onUp = () => {
     isDragging = false;
@@ -3225,32 +3390,109 @@ function applyTitleToSlide() {
   document.getElementById(id).addEventListener('input', applyTitleToSlide);
 });
 
-document.getElementById('meta-eyebrow-apply').addEventListener('click', () => {
-  const src = SLIDES[currentSlideIdx].canvasElements.find(c => c.kind === 'eyebrow');
-  if (!src) { showToast('Add an eyebrow to this slide first', false); return; }
+// ── Apply position helpers — position only, text stays per-slide ──
+function applyPositionToSlides(kind, indices) {
+  const src = SLIDES[currentSlideIdx].canvasElements.find(c => c.kind === kind);
+  if (!src) { showToast('Add a ' + kind + ' to this slide first', false); return; }
   pushHistory();
-  SLIDES.forEach((s, i) => {
+  const defaults = kind === 'eyebrow' ? DEFAULT_EYEBROW : DEFAULT_TITLE;
+  let count = 0;
+  indices.forEach(i => {
     if (i === currentSlideIdx) return;
-    let cel = s.canvasElements.find(c => c.kind === 'eyebrow');
-    if (!cel) { cel = { kind: 'eyebrow', ...DEFAULT_EYEBROW, content: s.eyebrow || '' }; s.canvasElements.push(cel); }
+    let cel = SLIDES[i].canvasElements.find(c => c.kind === kind);
+    if (!cel) {
+      // Create the element with this slide's own text content
+      const content = kind === 'eyebrow' ? (SLIDES[i].eyebrow || '') : (SLIDES[i].title || '');
+      cel = { kind, ...defaults, content };
+      SLIDES[i].canvasElements.push(cel);
+    }
+    // Copy POSITION only — never overwrite content
     cel.x = src.x; cel.y = src.y; cel.fontSize = src.fontSize; cel.color = src.color;
+    if (kind === 'title') cel.w = src.w;
+    count++;
   });
   markUnsaved();
-  showToast('Eyebrow position applied to all ' + SLIDES.length + ' slides', true);
+  showToast('Position applied to ' + count + ' slides', true);
+}
+
+// ── Dropdown toggles ──
+document.querySelectorAll('.apply-trigger').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const wrap = btn.closest('.apply-dropdown');
+    document.querySelectorAll('.apply-dropdown.open').forEach(d => { if (d !== wrap) d.classList.remove('open'); });
+    wrap.classList.toggle('open');
+  });
+});
+document.addEventListener('click', () => {
+  document.querySelectorAll('.apply-dropdown.open').forEach(d => d.classList.remove('open'));
 });
 
-document.getElementById('meta-title-apply').addEventListener('click', () => {
-  const src = SLIDES[currentSlideIdx].canvasElements.find(c => c.kind === 'title');
-  if (!src) { showToast('Add a title to this slide first', false); return; }
-  pushHistory();
-  SLIDES.forEach((s, i) => {
-    if (i === currentSlideIdx) return;
-    let cel = s.canvasElements.find(c => c.kind === 'title');
-    if (!cel) { cel = { kind: 'title', ...DEFAULT_TITLE, content: s.title || '' }; s.canvasElements.push(cel); }
-    cel.x = src.x; cel.y = src.y; cel.w = src.w; cel.fontSize = src.fontSize; cel.color = src.color;
+// ── Dropdown option handler ──
+let _pickKind = null;
+
+document.querySelectorAll('.apply-opt').forEach(opt => {
+  opt.addEventListener('click', e => {
+    e.stopPropagation();
+    const kind  = opt.dataset.kind;
+    const scope = opt.dataset.scope;
+    opt.closest('.apply-dropdown').classList.remove('open');
+    if (scope === 'all') {
+      applyPositionToSlides(kind, SLIDES.map((_, i) => i));
+    } else if (scope === 'phase') {
+      const currentPhase = SLIDES[currentSlideIdx].phase;
+      applyPositionToSlides(kind, SLIDES.map((s, i) => i).filter(i => SLIDES[i].phase === currentPhase));
+    } else if (scope === 'pick') {
+      openPickModal(kind);
+    }
   });
-  markUnsaved();
-  showToast('Title position applied to all ' + SLIDES.length + ' slides', true);
+});
+
+// ── Pick-slides modal ──
+function openPickModal(kind) {
+  _pickKind = kind;
+  document.getElementById('psm-title').textContent = 'Apply ' + kind + ' position to…';
+  const list = document.getElementById('psm-list');
+  list.innerHTML = '';
+  SLIDES.forEach((s, i) => {
+    const isCurrent = i === currentSlideIdx;
+    const row = document.createElement('label');
+    row.className = 'psm-row' + (isCurrent ? ' current' : '');
+    row.innerHTML = `
+      <input type="checkbox" ${isCurrent ? 'disabled' : 'checked'} data-idx="${i}">
+      <div class="psm-row-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="psm-row-info">
+        <div class="psm-row-title">${stripHTML(s.title || '—')}</div>
+        <div class="psm-row-phase">Ph ${s.phase} · ${s.phaseName}</div>
+      </div>`;
+    list.appendChild(row);
+  });
+  document.getElementById('pick-slides-modal').classList.add('open');
+}
+document.getElementById('psm-close').addEventListener('click', () => {
+  document.getElementById('pick-slides-modal').classList.remove('open');
+});
+document.getElementById('pick-slides-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('pick-slides-modal'))
+    document.getElementById('pick-slides-modal').classList.remove('open');
+});
+document.getElementById('psm-sel-all').addEventListener('click', () => {
+  document.querySelectorAll('#psm-list input:not(:disabled)').forEach(cb => cb.checked = true);
+});
+document.getElementById('psm-sel-none').addEventListener('click', () => {
+  document.querySelectorAll('#psm-list input:not(:disabled)').forEach(cb => cb.checked = false);
+});
+document.getElementById('psm-sel-phase').addEventListener('click', () => {
+  const phase = SLIDES[currentSlideIdx].phase;
+  document.querySelectorAll('#psm-list input:not(:disabled)').forEach(cb => {
+    cb.checked = SLIDES[parseInt(cb.dataset.idx)].phase === phase;
+  });
+});
+document.getElementById('psm-apply').addEventListener('click', () => {
+  const selected = Array.from(document.querySelectorAll('#psm-list input:checked')).map(cb => parseInt(cb.dataset.idx));
+  document.getElementById('pick-slides-modal').classList.remove('open');
+  if (!selected.length) { showToast('No slides selected', false); return; }
+  applyPositionToSlides(_pickKind, selected);
 });
 
 document.getElementById('meta-notes').addEventListener('input', () => {
@@ -3839,6 +4081,148 @@ document.getElementById('grid-size').addEventListener('change', e => {
     gridSize = v;
     if (gridVisible) drawGrid();
   }
+});
+
+// ════════════════════════════════════════════════════════════════
+//  NEW PRESENTATION
+// ════════════════════════════════════════════════════════════════
+
+const DEFAULT_PHASES = [
+  'Hypothesis / Introduction',
+  'Materials & Methods',
+  'Results & Analysis',
+  'Discussion & Conclusions'
+];
+
+function openNewPresModal() {
+  // Populate phase list with defaults
+  const list = document.getElementById('npm-phases-list');
+  list.innerHTML = '';
+  DEFAULT_PHASES.forEach(name => addNpmPhaseRow(name));
+  document.getElementById('npm-pres-title').value = '';
+  document.getElementById('new-pres-modal').classList.add('open');
+  setTimeout(() => document.getElementById('npm-pres-title').focus(), 50);
+}
+
+function addNpmPhaseRow(name = '') {
+  const list = document.getElementById('npm-phases-list');
+  const row = document.createElement('div');
+  row.className = 'npm-phase-row';
+  row.innerHTML = `
+    <span style="font-size:9px;color:var(--dim);font-family:'IBM Plex Mono',monospace;min-width:16px">${list.children.length + 1}</span>
+    <input class="npm-phase-input" type="text" placeholder="Phase name" value="${name}">
+    <button class="npm-phase-del" title="Remove">✕</button>
+  `;
+  row.querySelector('.npm-phase-del').addEventListener('click', () => {
+    row.remove();
+    // Renumber
+    document.querySelectorAll('.npm-phase-row').forEach((r, i) => {
+      r.querySelector('span').textContent = i + 1;
+    });
+  });
+  list.appendChild(row);
+}
+
+function createNewPresentation() {
+  const title = document.getElementById('npm-pres-title').value.trim() || 'My Presentation';
+  const phaseInputs = document.querySelectorAll('.npm-phase-input');
+  const phases = Array.from(phaseInputs).map(inp => inp.value.trim()).filter(Boolean);
+  if (!phases.length) { showToast('Add at least one phase', false); return; }
+
+  // Build one title slide + one content slide per phase
+  const newSlides = [];
+  phases.forEach((phaseName, pi) => {
+    const phaseNum = pi + 1;
+    const eyebrowContent = `Phase 0${phaseNum} — ${phaseName}`;
+
+    // Title slide for first phase only
+    if (pi === 0) {
+      newSlides.push({
+        phase: phaseNum, phaseName,
+        type: 'title', eyebrow: title, title,
+        body: '', image: '', imageCaption: '', imagePosition: 'right',
+        notes: '',
+        canvasElements: [
+          { kind: 'eyebrow', x: 180, y: 195, fontSize: 11, color: '#c8a44a', content: title },
+          { kind: 'title',   x: 60, y: 235, w: 840, fontSize: 40, color: '#f0f6ff', content: title }
+        ]
+      });
+    }
+
+    // Content slide for every phase
+    newSlides.push({
+      phase: phaseNum, phaseName,
+      type: 'content', eyebrow: eyebrowContent, title: phaseName,
+      body: '', image: '', imageCaption: '', imagePosition: 'right',
+      notes: '',
+      canvasElements: [
+        { kind: 'eyebrow', x: 48, y: 30, fontSize: 11, color: '#c8a44a', content: eyebrowContent },
+        { kind: 'title',   x: 48, y: 58, w: 820, fontSize: 28, color: '#f0f6ff', content: phaseName }
+      ]
+    });
+  });
+
+  // Last closing slide
+  const lastPhase = phases[phases.length - 1];
+  newSlides.push({
+    phase: phases.length, phaseName: lastPhase,
+    type: 'title', eyebrow: 'Thank you', title: 'Questions & Discussion',
+    body: '', image: '', imageCaption: '', imagePosition: 'right',
+    notes: 'Open the floor to questions.',
+    canvasElements: [
+      { kind: 'eyebrow', x: 180, y: 195, fontSize: 11, color: '#c8a44a', content: 'Thank you' },
+      { kind: 'title',   x: 60, y: 235, w: 840, fontSize: 40, color: '#f0f6ff', content: 'Questions & Discussion' }
+    ]
+  });
+
+  // Build a blank presentation HTML using the current lab-presentation.html as a template
+  // We embed the slides into a minimal self-contained HTML
+  const slidesJSON = JSON.stringify(newSlides, null, 2);
+  const blankSrc = buildBlankPresentationHTML(title, slidesJSON);
+
+  SLIDES = newSlides;
+  window._originalSrc = blankSrc;
+  fileName = title.replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.html';
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('file-label').textContent = fileName;
+  document.getElementById('file-label').classList.add('loaded');
+  document.getElementById('slide-count').textContent = SLIDES.length + ' slides';
+  document.getElementById('new-pres-modal').classList.remove('open');
+  renderSidebar(); renderTimeline();
+  selectSlide(0); initTreeDrag();
+  switchToTab('text');
+  // Seed history
+  pushHistory();
+  markUnsaved();
+  showToast('Created "' + title + '" — ' + newSlides.length + ' slides', true);
+}
+
+function buildBlankPresentationHTML(title, slidesJSON) {
+  // If we have the current presentation file loaded, use it as template
+  if (window._originalSrc && window._originalSrc.includes('const SLIDES')) {
+    return window._originalSrc.replace(
+      /\/\/ __ SLIDES_JSON_START __[\s\S]*?\/\/ __ SLIDES_JSON_END __/,
+      `// __ SLIDES_JSON_START __\nconst SLIDES = ${slidesJSON};\n// __ SLIDES_JSON_END __`
+    );
+  }
+  // Minimal fallback — just a stub the editor can save/preview from
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title></head><body>
+<script>
+// __ SLIDES_JSON_START __
+const SLIDES = ${slidesJSON};
+// __ SLIDES_JSON_END __
+<\/script></body></html>`;
+}
+
+document.getElementById('btn-new').addEventListener('click', openNewPresModal);
+document.getElementById('es-new-btn').addEventListener('click', openNewPresModal);
+document.getElementById('npm-close').addEventListener('click', () => document.getElementById('new-pres-modal').classList.remove('open'));
+document.getElementById('npm-cancel').addEventListener('click', () => document.getElementById('new-pres-modal').classList.remove('open'));
+document.getElementById('npm-create').addEventListener('click', createNewPresentation);
+document.getElementById('npm-add-phase').addEventListener('click', () => addNpmPhaseRow());
+document.getElementById('new-pres-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('new-pres-modal'))
+    document.getElementById('new-pres-modal').classList.remove('open');
 });
 
 // ════════════════════════════════════════════════════════════════
