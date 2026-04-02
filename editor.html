@@ -1914,7 +1914,8 @@ function handleSlideAction(act, idx) {
 // ── Unified tree drag — single delegated listener, set up once ──
 let _treeDragPhaseIdx = null;
 let _treeDragSlideIdx = null;
-let _treeDragSlideSrcPhaseNum = null; // phase the dragged slide belongs to
+let _treeDragSlideSrcPhaseNum = null;
+let _treeDragSrcPhaseNum = null;   // phaseNum of the phase being dragged
 let _treeListenersAttached = false;
 
 function initTreeDrag() {
@@ -2005,7 +2006,8 @@ function initTreeDrag() {
       const header = dragHandle.closest('.phase-group-header');
       const group  = dragHandle.closest('.phase-group');
       if (!header || !group) return;
-      _treeDragPhaseIdx = parseInt(header.dataset.phaseIdx);
+      _treeDragPhaseIdx    = parseInt(header.dataset.phaseIdx);
+      _treeDragSrcPhaseNum = parseInt(group.dataset.phaseNum);
       _treeDragSlideIdx = null;
       _treeDragSlideSrcPhaseNum = null;
       group.classList.add('dragging');
@@ -2033,6 +2035,7 @@ function initTreeDrag() {
     _treeDragPhaseIdx = null;
     _treeDragSlideIdx = null;
     _treeDragSlideSrcPhaseNum = null;
+    _treeDragSrcPhaseNum = null;
   });
 
   // ── DRAGOVER ──
@@ -2079,12 +2082,14 @@ function initTreeDrag() {
 
     if (_treeDragPhaseIdx !== null) {
       // ── PHASE DROP ──
+      const srcPhaseNum = _treeDragSrcPhaseNum;
+      // Clean up dragging marker
       const draggingGroup = list.querySelector('.phase-group[data-dragging="1"]');
-      const srcPhaseNum = draggingGroup ? parseInt(draggingGroup.dataset.phaseNum) : NaN;
       if (draggingGroup) delete draggingGroup.dataset.dragging;
 
+      if (isNaN(srcPhaseNum)) return;
       const targetGroup = e.target.closest('.phase-group');
-      if (!targetGroup || isNaN(srcPhaseNum)) return;
+      if (!targetGroup) return;
       const targetPhaseNum = parseInt(targetGroup.dataset.phaseNum);
       if (targetPhaseNum === srcPhaseNum) return;
 
@@ -2529,6 +2534,7 @@ function addBulletList(e) {
   const raw = getStageCoords(e);
   const p = snapPos(raw.x, raw.y);
   const idx = SLIDES[currentSlideIdx].canvasElements.length;
+  pushHistory();
   const cel = {
     kind: 'bullet',
     x: p.x - 10, y: p.y - 10,
@@ -2651,9 +2657,10 @@ function initDOMElement(wrapper, idx) {
   wrapper.addEventListener('mousedown', e => {
     if (e.target.classList.contains('resize-handle') || e.target.classList.contains('crop-handle')) return;
     if (e.target.closest('.el-actions')) return;
+    // Only consume the event in select mode — let non-select tools fall through to the stage
+    if (activeTool !== 'select') return;
     e.stopPropagation();
     selectDOMEl(wrapper, idx);
-    if (activeTool !== 'select') return;
     startDrag(e, wrapper, idx);
   });
 
