@@ -642,7 +642,140 @@ textarea.meta-input { height: 70px; }
 #toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 #toast.success { border-color: var(--green-border); color: var(--green); }
 
-/* ── GOOGLE DRIVE MODAL ── */
+/* ── TIMELINE EDITOR MODAL ── */
+#tl-modal, #settings-modal {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(2,8,16,0.88); align-items: center; justify-content: center;
+}
+#tl-modal.open, #settings-modal.open { display: flex; }
+.modal-box {
+  background: var(--navy-800); border: 1px solid var(--navy-500);
+  border-radius: 10px; width: 560px; max-height: 85vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+}
+.modal-box.wide { width: 680px; }
+.modal-head {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--navy-600);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--white); }
+.modal-sub { font-size: 10px; color: var(--dim); margin-top: 3px; letter-spacing: 0.04em; }
+.modal-close {
+  background: none; border: none; color: var(--muted); font-size: 18px;
+  cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1;
+  transition: color 0.15s;
+}
+.modal-close:hover { color: var(--white); }
+.modal-body { flex: 1; overflow-y: auto; padding: 16px 22px; }
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 2px; }
+.modal-foot {
+  padding: 14px 22px;
+  border-top: 1px solid var(--navy-600);
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  flex-shrink: 0;
+}
+.modal-btn {
+  padding: 8px 20px; border-radius: 20px; font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; cursor: pointer; border: none; transition: all 0.15s; letter-spacing: 0.04em;
+}
+.modal-btn.cancel { background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--navy-600); }
+.modal-btn.cancel:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+.modal-btn.apply { background: var(--green); color: #020810; font-weight: 500; }
+.modal-btn.apply:hover { background: #5ddfaa; }
+.modal-btn.danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(224,92,92,0.3); }
+.modal-btn.danger:hover { background: rgba(224,92,92,0.25); }
+
+/* Timeline editor rows */
+.tl-phase-row {
+  background: rgba(7,22,40,0.7); border: 1px solid var(--navy-600);
+  border-radius: 7px; margin-bottom: 10px; overflow: hidden;
+}
+.tl-phase-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--navy-700);
+  background: rgba(37,88,168,0.08);
+}
+.tl-phase-num {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  letter-spacing: 0.18em; color: var(--gold);
+  background: rgba(200,164,74,0.1); border: 1px solid rgba(200,164,74,0.2);
+  border-radius: 3px; padding: 2px 6px; flex-shrink: 0;
+}
+.tl-phase-name-input {
+  flex: 1; background: none; border: none;
+  color: var(--white); font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 0.04em; outline: none;
+  padding: 2px 4px; border-radius: 3px;
+}
+.tl-phase-name-input:focus { background: rgba(37,88,168,0.15); }
+.tl-phase-del {
+  background: none; border: none; color: var(--dim); cursor: pointer;
+  font-size: 14px; padding: 2px 6px; border-radius: 3px; line-height: 1;
+  transition: all 0.12s; flex-shrink: 0;
+}
+.tl-phase-del:hover { color: var(--red); background: var(--red-dim); }
+.tl-slides-area { padding: 8px 12px 10px; }
+.tl-slides-label {
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 6px;
+}
+.tl-slide-chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px; }
+.tl-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(37,88,168,0.2); border: 1px solid var(--navy-600);
+  border-radius: 4px; padding: 3px 8px 3px 6px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--blue-100);
+  cursor: default;
+}
+.tl-chip-num {
+  background: var(--navy-600); border-radius: 2px;
+  padding: 1px 4px; font-size: 8px; color: var(--dim);
+}
+.tl-chip-move {
+  background: none; border: none; color: var(--dim); cursor: pointer;
+  font-size: 10px; padding: 0 2px; line-height: 1; transition: color 0.1s;
+}
+.tl-chip-move:hover { color: var(--white); }
+.tl-add-phase-btn {
+  width: 100%; padding: 9px; border: 1px dashed var(--navy-500);
+  background: none; color: var(--muted); font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.06em; border-radius: 6px; cursor: pointer;
+  transition: all 0.15s; margin-top: 4px;
+}
+.tl-add-phase-btn:hover { border-color: var(--blue-400); color: var(--white); background: rgba(37,88,168,0.1); }
+
+/* Settings modal */
+.settings-section { margin-bottom: 22px; }
+.settings-section-title {
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--navy-700);
+}
+.settings-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 9px;
+}
+.settings-label { font-size: 11px; color: var(--muted); flex: 1; }
+.settings-hint { font-size: 9px; color: var(--dim); margin-top: 2px; }
+.settings-input {
+  background: var(--navy-700); border: 1px solid var(--navy-600);
+  color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  padding: 5px 10px; border-radius: 5px; width: 80px; text-align: center;
+}
+.settings-input:focus { outline: none; border-color: var(--green); }
+.settings-input.wide { width: 140px; text-align: left; }
+.settings-preview {
+  background: rgba(7,22,40,0.8); border: 1px solid var(--navy-600);
+  border-radius: 6px; padding: 10px 14px; margin-top: 10px;
+  font-size: 10px; color: var(--dim); line-height: 1.7;
+}
+.settings-preview b { color: var(--blue-100); }
+
 #drive-modal {
   display: none; position: fixed; inset: 0; z-index: 500;
   background: rgba(2,8,16,0.85); align-items: center; justify-content: center;
@@ -690,6 +823,14 @@ textarea.meta-input { height: 70px; }
   <button class="tb-btn" id="btn-meta">
     <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     Edit Text
+  </button>
+  <button class="tb-btn" id="btn-tl-editor">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><circle cx="7" cy="12" r="2"/><circle cx="13" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    Timeline
+  </button>
+  <button class="tb-btn" id="btn-settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+    Settings
   </button>
   <div class="tb-sep"></div>
   <button class="tb-btn primary" id="btn-save">
@@ -890,6 +1031,99 @@ textarea.meta-input { height: 70px; }
     <div class="dm-btns">
       <button class="dm-btn cancel" id="drive-cancel">Cancel</button>
       <button class="dm-btn ok" id="drive-ok">Add Image</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TIMELINE EDITOR MODAL ── -->
+<div id="tl-modal">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Edit Timeline Phases</div>
+        <div class="modal-sub">Rename phases · add or remove phases · drag slides between phases</div>
+      </div>
+      <button class="modal-close" id="tl-modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="tl-modal-body">
+      <!-- Filled dynamically -->
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn cancel" id="tl-modal-cancel">Cancel</button>
+      <button class="modal-btn apply" id="tl-modal-apply">Apply Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS MODAL ── -->
+<div id="settings-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Global Slide Settings</div>
+        <div class="modal-sub">Apply layout changes to all slides at once</div>
+      </div>
+      <button class="modal-close" id="settings-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="settings-section">
+        <div class="settings-section-title">Eyebrow — applies to all slides</div>
+        <div class="settings-row">
+          <div class="settings-label">
+            Font size
+            <div class="settings-hint">Current values shown; change to override all slides</div>
+          </div>
+          <input class="settings-input" id="sg-eyebrow-size" type="number" min="6" max="32" placeholder="11">
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">Replace prefix text
+            <div class="settings-hint">Leave blank to keep existing. E.g. "Lab 2025 —"</div>
+          </div>
+          <input class="settings-input wide" id="sg-eyebrow-prefix" type="text" placeholder="(keep as-is)">
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Title — applies to all slides</div>
+        <div class="settings-row">
+          <div class="settings-label">Font size (h1 — title slides)</div>
+          <input class="settings-input" id="sg-h1-size" type="number" min="12" max="80" placeholder="(clamp)">
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">Font size (h2 — content slides)</div>
+          <input class="settings-input" id="sg-h2-size" type="number" min="12" max="60" placeholder="(clamp)">
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Body text — applies to all slides</div>
+        <div class="settings-row">
+          <div class="settings-label">Font size (slide-body)</div>
+          <input class="settings-input" id="sg-body-size" type="number" min="8" max="40" placeholder="(clamp)">
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Slide padding / layout</div>
+        <div class="settings-row">
+          <div class="settings-label">Top padding (px)</div>
+          <input class="settings-input" id="sg-pad-top" type="number" min="0" max="200" placeholder="48">
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">Side padding (% of width)</div>
+          <input class="settings-input" id="sg-pad-side" type="number" min="1" max="30" placeholder="8">
+        </div>
+      </div>
+
+      <div class="settings-preview" id="sg-preview">
+        Fill in any field above and click <b>Apply to All Slides</b>. Only non-empty fields will be changed. The presentation HTML will be updated on download.
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn cancel" id="settings-modal-cancel">Cancel</button>
+      <button class="modal-btn apply" id="settings-modal-apply">Apply to All Slides</button>
     </div>
   </div>
 </div>
@@ -2404,6 +2638,259 @@ function showToast(msg, success = true) {
   clearTimeout(toastTimeout);
   toastTimeout = setTimeout(() => { t.classList.remove('visible'); }, 2800);
 }
+
+// ════════════════════════════════════════════════════════════════
+//  TIMELINE EDITOR MODAL
+// ════════════════════════════════════════════════════════════════
+
+// Working copy of phase structure while modal is open
+let _tlDraft = null;
+
+document.getElementById('btn-tl-editor').addEventListener('click', () => {
+  if (!SLIDES.length) { showToast('Load a presentation file first', false); return; }
+  openTlModal();
+});
+document.getElementById('tl-modal-close').addEventListener('click', closeTlModal);
+document.getElementById('tl-modal-cancel').addEventListener('click', closeTlModal);
+document.getElementById('tl-modal-apply').addEventListener('click', applyTlChanges);
+
+function openTlModal() {
+  // Build draft from current SLIDES
+  _tlDraft = buildPhaseDraft();
+  renderTlModal();
+  document.getElementById('tl-modal').classList.add('open');
+}
+
+function closeTlModal() {
+  document.getElementById('tl-modal').classList.remove('open');
+  _tlDraft = null;
+}
+
+function buildPhaseDraft() {
+  // Returns array of { phaseNum, name, slideIndices[] }
+  const map = {};
+  SLIDES.forEach((s, i) => {
+    const pn = s.phase || 1;
+    if (!map[pn]) map[pn] = { phaseNum: pn, name: s.phaseName || ('Phase ' + pn), slideIndices: [] };
+    map[pn].slideIndices.push(i);
+  });
+  // Sort by phaseNum
+  return Object.values(map).sort((a, b) => a.phaseNum - b.phaseNum);
+}
+
+function renderTlModal() {
+  const body = document.getElementById('tl-modal-body');
+  body.innerHTML = '';
+
+  _tlDraft.forEach((phase, pi) => {
+    const row = document.createElement('div');
+    row.className = 'tl-phase-row';
+    row.dataset.pi = pi;
+
+    // Chips for each slide in this phase
+    const chipsHTML = phase.slideIndices.map(si => {
+      const s = SLIDES[si];
+      const title = stripHTML(s ? s.title || '' : '').slice(0, 28) || '—';
+      return `<div class="tl-chip" data-si="${si}">
+        <span class="tl-chip-num">${si + 1}</span>
+        <span>${title}</span>
+        <button class="tl-chip-move" data-si="${si}" data-dir="prev" title="Move to previous phase">◀</button>
+        <button class="tl-chip-move" data-si="${si}" data-dir="next" title="Move to next phase">▶</button>
+      </div>`;
+    }).join('');
+
+    row.innerHTML = `
+      <div class="tl-phase-head">
+        <span class="tl-phase-num">0${pi + 1}</span>
+        <input class="tl-phase-name-input" value="${phase.name}" placeholder="Phase name" data-pi="${pi}">
+        <button class="tl-phase-del" data-pi="${pi}" title="Remove this phase (slides move to previous phase)">✕</button>
+      </div>
+      <div class="tl-slides-area">
+        <div class="tl-slides-label">Slides in this phase</div>
+        <div class="tl-slide-chips">${chipsHTML || '<span style="font-size:9px;color:var(--dim);padding:4px 0">No slides assigned</span>'}</div>
+      </div>
+    `;
+
+    // Phase name input
+    row.querySelector('.tl-phase-name-input').addEventListener('input', e => {
+      _tlDraft[pi].name = e.target.value;
+    });
+
+    // Delete phase
+    row.querySelector('.tl-phase-del').addEventListener('click', () => {
+      if (_tlDraft.length <= 1) { showToast('Must have at least one phase', false); return; }
+      // Move slides to previous phase (or next if first)
+      const targetPi = pi > 0 ? pi - 1 : 1;
+      if (_tlDraft[targetPi]) {
+        _tlDraft[targetPi].slideIndices.push(..._tlDraft[pi].slideIndices);
+        _tlDraft[targetPi].slideIndices.sort((a, b) => a - b);
+      }
+      _tlDraft.splice(pi, 1);
+      // Re-number
+      _tlDraft.forEach((p, i) => { p.phaseNum = i + 1; });
+      renderTlModal();
+    });
+
+    // Move slide between phases
+    row.querySelectorAll('.tl-chip-move').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const si = parseInt(btn.dataset.si);
+        const dir = btn.dataset.dir;
+        const fromPi = pi;
+        const toPi = dir === 'next' ? pi + 1 : pi - 1;
+        if (toPi < 0 || toPi >= _tlDraft.length) { showToast('No phase in that direction', false); return; }
+        // Remove from current phase
+        _tlDraft[fromPi].slideIndices = _tlDraft[fromPi].slideIndices.filter(x => x !== si);
+        // Add to target phase, keep sorted
+        _tlDraft[toPi].slideIndices.push(si);
+        _tlDraft[toPi].slideIndices.sort((a, b) => a - b);
+        renderTlModal();
+      });
+    });
+
+    body.appendChild(row);
+  });
+
+  // Add phase button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'tl-add-phase-btn';
+  addBtn.textContent = '+ Add New Phase';
+  addBtn.addEventListener('click', () => {
+    const maxNum = Math.max(..._tlDraft.map(p => p.phaseNum), 0);
+    _tlDraft.push({ phaseNum: maxNum + 1, name: 'New Phase', slideIndices: [] });
+    renderTlModal();
+    // Focus the new name input
+    const inputs = document.querySelectorAll('.tl-phase-name-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  });
+  body.appendChild(addBtn);
+}
+
+function applyTlChanges() {
+  // Write phase/phaseName back to every slide based on draft
+  _tlDraft.forEach((phase, pi) => {
+    phase.slideIndices.forEach(si => {
+      if (SLIDES[si]) {
+        SLIDES[si].phase = phase.phaseNum;
+        SLIDES[si].phaseName = phase.name;
+      }
+    });
+  });
+  // Any slides that were in no phase — assign to first phase
+  SLIDES.forEach(s => {
+    if (!s.phase) { s.phase = 1; s.phaseName = _tlDraft[0] ? _tlDraft[0].name : 'Phase 1'; }
+  });
+  closeTlModal();
+  renderSidebar();
+  renderTimeline();
+  markUnsaved();
+  showToast('Timeline updated', true);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GLOBAL SETTINGS MODAL
+// ════════════════════════════════════════════════════════════════
+
+document.getElementById('btn-settings').addEventListener('click', () => {
+  if (!SLIDES.length) { showToast('Load a presentation file first', false); return; }
+  document.getElementById('settings-modal').classList.add('open');
+  updateSettingsPreview();
+});
+document.getElementById('settings-modal-close').addEventListener('click', () => document.getElementById('settings-modal').classList.remove('open'));
+document.getElementById('settings-modal-cancel').addEventListener('click', () => document.getElementById('settings-modal').classList.remove('open'));
+document.getElementById('settings-modal-apply').addEventListener('click', applyGlobalSettings);
+
+['sg-eyebrow-size','sg-eyebrow-prefix','sg-h1-size','sg-h2-size','sg-body-size','sg-pad-top','sg-pad-side'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateSettingsPreview);
+});
+
+function updateSettingsPreview() {
+  const eyebrowSize = document.getElementById('sg-eyebrow-size').value;
+  const eyebrowPrefix = document.getElementById('sg-eyebrow-prefix').value;
+  const h1Size = document.getElementById('sg-h1-size').value;
+  const h2Size = document.getElementById('sg-h2-size').value;
+  const bodySize = document.getElementById('sg-body-size').value;
+  const padTop = document.getElementById('sg-pad-top').value;
+  const padSide = document.getElementById('sg-pad-side').value;
+
+  const changes = [];
+  if (eyebrowSize) changes.push(`Eyebrow font → <b>${eyebrowSize}px</b> on all slides`);
+  if (eyebrowPrefix) changes.push(`Eyebrow text prefix → <b>"${eyebrowPrefix}"</b> prepended to all eyebrows`);
+  if (h1Size) changes.push(`Title (h1) font → <b>${h1Size}px</b> on title slides`);
+  if (h2Size) changes.push(`Title (h2) font → <b>${h2Size}px</b> on content slides`);
+  if (bodySize) changes.push(`Body text font → <b>${bodySize}px</b> on all slides`);
+  if (padTop) changes.push(`Top padding → <b>${padTop}px</b> on all slides`);
+  if (padSide) changes.push(`Side padding → <b>${padSide}%</b> on all slides`);
+
+  const preview = document.getElementById('sg-preview');
+  if (!changes.length) {
+    preview.innerHTML = 'Fill in any field above. Only non-empty fields will be changed.';
+  } else {
+    preview.innerHTML = '<b>Will apply:</b><br>' + changes.join('<br>');
+  }
+}
+
+function applyGlobalSettings() {
+  const eyebrowSize = document.getElementById('sg-eyebrow-size').value.trim();
+  const eyebrowPrefix = document.getElementById('sg-eyebrow-prefix').value.trim();
+  const h1Size = document.getElementById('sg-h1-size').value.trim();
+  const h2Size = document.getElementById('sg-h2-size').value.trim();
+  const bodySize = document.getElementById('sg-body-size').value.trim();
+  const padTop = document.getElementById('sg-pad-top').value.trim();
+  const padSide = document.getElementById('sg-pad-side').value.trim();
+
+  if (!eyebrowSize && !eyebrowPrefix && !h1Size && !h2Size && !bodySize && !padTop && !padSide) {
+    showToast('No changes to apply — fill in at least one field', false);
+    return;
+  }
+
+  // Apply to SLIDES data (eyebrow prefix)
+  if (eyebrowPrefix) {
+    SLIDES.forEach(s => {
+      if (s.eyebrow && !s.eyebrow.startsWith(eyebrowPrefix)) {
+        // Replace the part before the first ' — ' or prepend
+        s.eyebrow = s.eyebrow.replace(/^[^—]*—\s*/, eyebrowPrefix + ' — ');
+        if (!s.eyebrow.includes(eyebrowPrefix)) s.eyebrow = eyebrowPrefix + ' — ' + s.eyebrow;
+      }
+    });
+  }
+
+  // Apply CSS overrides to the _originalSrc for download
+  // We inject a <style> block that overrides the relevant vars/rules
+  // Build CSS overrides string
+  const cssOverrides = [];
+  if (eyebrowSize) cssOverrides.push(`.slide-eyebrow { font-size: ${eyebrowSize}px !important; }`);
+  if (h1Size) cssOverrides.push(`.slide h1 { font-size: ${h1Size}px !important; }`);
+  if (h2Size) cssOverrides.push(`.slide h2 { font-size: ${h2Size}px !important; }`);
+  if (bodySize) cssOverrides.push(`.slide-body { font-size: ${bodySize}px !important; }`);
+  if (padTop) cssOverrides.push(`.slide { padding-top: ${padTop}px !important; padding-bottom: ${Math.round(padTop * 0.75)}px !important; }`);
+  if (padSide) cssOverrides.push(`.slide { padding-left: ${padSide}% !important; padding-right: ${padSide}% !important; }`);
+
+  if (cssOverrides.length > 0) {
+    const styleBlock = `\n<style id="global-overrides">\n/* ── GLOBAL OVERRIDES (set in editor) ── */\n${cssOverrides.join('\n')}\n</style>`;
+    // Inject or replace existing override block in _originalSrc
+    if (window._originalSrc.includes('id="global-overrides"')) {
+      window._originalSrc = window._originalSrc.replace(
+        /<style id="global-overrides">[\s\S]*?<\/style>/,
+        styleBlock
+      );
+    } else {
+      window._originalSrc = window._originalSrc.replace('</head>', styleBlock + '\n</head>');
+    }
+  }
+
+  // Re-render sidebar (eyebrow may have changed)
+  renderSidebar();
+  renderSlidePreview();
+  markUnsaved();
+  document.getElementById('settings-modal').classList.remove('open');
+  showToast('Settings applied to all slides — download to save', true);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
 
 // Init
 setTool('select');
