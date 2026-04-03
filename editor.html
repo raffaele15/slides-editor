@@ -1742,6 +1742,22 @@ function loadHTML(src) {
     // Switch to Text tab on load so the fields are immediately visible
     switchToTab('text');
     showToast('Loaded ' + SLIDES.length + ' slides', true);
+    // Restore any theme overrides from the loaded file into the editor's own CSS
+    const themeMatch = src.match(/<style id="theme-overrides">([\s\S]*?)<\/style>/);
+    if (themeMatch) {
+      let editorStyle = document.getElementById('editor-theme-overrides');
+      if (!editorStyle) { editorStyle = document.createElement('style'); editorStyle.id = 'editor-theme-overrides'; document.head.appendChild(editorStyle); }
+      editorStyle.textContent = themeMatch[1];
+      // Sync pickers to loaded values
+      const vars = { 'tc-bg': '--navy-900', 'tc-gold': '--gold', 'tc-white': '--white', 'tc-body': '--blue-100', 'tc-blue': '--blue-400' };
+      Object.entries(vars).forEach(([id, cssVar]) => {
+        const m = themeMatch[1].match(new RegExp(cssVar + ':\\s*(#[0-9a-fA-F]{3,6})'));
+        if (m) {
+          const inp = document.getElementById(id); const sw = document.getElementById(id+'-swatch'); const hx = document.getElementById(id+'-hex');
+          if (inp) inp.value = m[1]; if (sw) sw.style.background = m[1]; if (hx) hx.textContent = m[1];
+        }
+      });
+    }
     window._originalSrc = src;
   } catch(err) {
     showToast('Error parsing slides: ' + err.message, false);
@@ -3415,6 +3431,13 @@ function showPropsForElement(cel) {
         <option ${(cel.fontFamily||'').includes('DM')? 'selected':''}>DM Serif Display, serif</option>
         <option ${(cel.fontFamily||'').includes('Mono')? 'selected':''}>IBM Plex Mono, monospace</option>
       </select>`)}
+      <div class="prop-row" style="margin-top:6px">
+        <div class="prop-label">Line by line</div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="pp-reveal-lines" ${cel.revealLines ? 'checked' : ''} ${cel.reveal ? '' : 'disabled'} style="width:14px;height:14px;accent-color:var(--green)">
+          <span style="font-size:9px;color:var(--muted)">reveal each line separately</span>
+        </label>
+      </div>
     `);
     html += propGroup('Position & Size', `
       ${propRow('X', `<input class="prop-input" id="pp-x" type="number" value="${Math.round(cel.x)}">`)}
@@ -3494,18 +3517,26 @@ function bindPropsEvents(cel) {
   // Reveal toggle
   const revealCb = document.getElementById('pp-reveal');
   const revealOrd = document.getElementById('pp-reveal-order');
+  const revealLines = document.getElementById('pp-reveal-lines');
   if (revealCb) {
     revealCb.addEventListener('change', e => {
       cel.reveal = e.target.checked;
       if (cel.reveal && cel.revealOrder === undefined) {
-        // Auto-assign next order number
         const els = SLIDES[currentSlideIdx].canvasElements;
         const maxOrder = els.filter(c => c.reveal).reduce((m, c) => Math.max(m, c.revealOrder||0), -1);
         cel.revealOrder = maxOrder + 1;
       }
+      if (!cel.reveal) cel.revealLines = false;
       if (revealOrd) revealOrd.disabled = !cel.reveal;
+      if (revealLines) revealLines.disabled = !cel.reveal;
       renderCanvasElements(); markUnsaved();
-      showPropsForElement(cel); // re-render props to update order field
+      showPropsForElement(cel);
+    });
+  }
+  if (revealLines) {
+    revealLines.addEventListener('change', e => {
+      cel.revealLines = e.target.checked;
+      renderCanvasElements(); markUnsaved();
     });
   }
   bind('pp-reveal-order', e => { cel.revealOrder = parseInt(e.target.value)||0; markUnsaved(); });
@@ -4656,7 +4687,6 @@ document.getElementById('tc-apply-btn').addEventListener('click', () => {
   const body  = document.getElementById('tc-body').value;
   const blue  = document.getElementById('tc-blue').value;
 
-  // Derive a palette from the chosen colors
   const css = `
 :root {
   --navy-900: ${bg};
@@ -4674,6 +4704,16 @@ document.getElementById('tc-apply-btn').addEventListener('click', () => {
   --muted:    ${blendHex(blue, '#ffffff', 0.35)};
 }`;
 
+  // ── Apply to the editor's own CSS variables so the canvas updates immediately ──
+  let editorStyle = document.getElementById('editor-theme-overrides');
+  if (!editorStyle) {
+    editorStyle = document.createElement('style');
+    editorStyle.id = 'editor-theme-overrides';
+    document.head.appendChild(editorStyle);
+  }
+  editorStyle.textContent = css;
+
+  // ── Also store in _originalSrc for download/preview ──
   const block = `\n<style id="theme-overrides">\n/* ── THEME OVERRIDES ── */\n${css}\n</style>`;
   if (window._originalSrc.includes('id="theme-overrides"')) {
     window._originalSrc = window._originalSrc.replace(/<style id="theme-overrides">[\s\S]*?<\/style>/, block);
@@ -4681,12 +4721,15 @@ document.getElementById('tc-apply-btn').addEventListener('click', () => {
     window._originalSrc = window._originalSrc.replace('</head>', block + '\n</head>');
   }
   markUnsaved();
-  showToast('Theme applied — download to save', true);
+  showToast('Theme applied', true);
 });
 
 document.getElementById('tc-reset-btn').addEventListener('click', () => {
   if (!window._originalSrc) return;
   window._originalSrc = window._originalSrc.replace(/<style id="theme-overrides">[\s\S]*?<\/style>\n?/, '');
+  // Remove from editor too
+  const editorStyle = document.getElementById('editor-theme-overrides');
+  if (editorStyle) editorStyle.remove();
   // Reset pickers to defaults
   const defaults = { 'tc-bg':'#040d1c','tc-gold':'#c8a44a','tc-white':'#f0f6ff','tc-body':'#b4d0f4','tc-blue':'#2558a8' };
   Object.entries(defaults).forEach(([id, val]) => {
