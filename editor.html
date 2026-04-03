@@ -1285,10 +1285,6 @@ textarea.meta-input { height: 70px; }
           <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
           Text
         </button>
-        <button class="tr-btn" id="tool-bullet" title="Add Bullet List (B)">
-          <svg viewBox="0 0 24 24"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><line x1="4" y1="6" x2="4.01" y2="6"/><line x1="4" y1="12" x2="4.01" y2="12"/><line x1="4" y1="18" x2="4.01" y2="18"/></svg>
-          Bullet List
-        </button>
         <button class="tr-btn" id="tool-image" title="Add Image (I)">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
           Image
@@ -2650,7 +2646,7 @@ function createSVGShape(cel, idx) {
     el.setAttribute('rx', 3);
   } else if (cel.kind === 'ellipse') {
     el = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
-    el.setAttribute('cx', cel.x + cel.w/2); el.setAttribute('cy', cel.y + cel.h/2);
+    el.setAttribute('cx', cel.x+cel.w/2); el.setAttribute('cy', cel.y+cel.h/2);
     el.setAttribute('rx', cel.w/2); el.setAttribute('ry', cel.h/2);
   } else if (cel.kind === 'line') {
     el = document.createElementNS('http://www.w3.org/2000/svg','line');
@@ -2660,7 +2656,6 @@ function createSVGShape(cel, idx) {
     el = document.createElementNS('http://www.w3.org/2000/svg','line');
     el.setAttribute('x1', cel.x1); el.setAttribute('y1', cel.y1);
     el.setAttribute('x2', cel.x2); el.setAttribute('y2', cel.y2);
-    // Add arrowhead marker
     ensureArrowMarker(cel.stroke || strokeColor, idx);
     el.setAttribute('marker-end', `url(#arrowhead-${idx})`);
   }
@@ -2669,10 +2664,111 @@ function createSVGShape(cel, idx) {
   el.setAttribute('stroke-width', cel.strokeWidth || strokeWidth);
   el.setAttribute('fill', cel.fill || 'none');
   el.dataset.idx = idx;
-  el.style.cursor = 'move';
-  el.addEventListener('click', e => { e.stopPropagation(); selectSVGEl(el, idx); });
   svgCanvas.appendChild(el);
+
+  // DOM overlay for interaction (drag/resize/select)
+  if (cel.kind === 'rect' || cel.kind === 'ellipse') {
+    const ov = document.createElement('div');
+    ov.className = 'canvas-element svg-shape-overlay';
+    ov.dataset.idx = idx; ov.dataset.kind = cel.kind;
+    ov.style.cssText = `left:${cel.x}px;top:${cel.y}px;width:${cel.w}px;height:${cel.h}px;background:transparent;`;
+    ov.innerHTML = `
+      <div class="el-border"></div>
+      <div class="el-actions">
+        <button class="el-act-btn" data-act="front">Front</button>
+        <button class="el-act-btn" data-act="back">Back</button>
+        <div class="el-act-sep"></div>
+        <button class="el-act-btn del" data-act="delete">Delete</button>
+      </div>
+      <div class="resize-handle nw" data-dir="nw"></div>
+      <div class="resize-handle ne" data-dir="ne"></div>
+      <div class="resize-handle sw" data-dir="sw"></div>
+      <div class="resize-handle se" data-dir="se"></div>`;
+    ov.querySelectorAll('.el-act-btn').forEach(btn => {
+      btn.addEventListener('click', e => { e.stopPropagation(); handleElementAction(btn.dataset.act, ov, idx); });
+    });
+    ov.querySelectorAll('.resize-handle').forEach(h => {
+      h.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        startSVGResize(e, ov, el, cel, h.dataset.dir);
+      });
+    });
+    ov.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('resize-handle') || e.target.closest('.el-actions')) return;
+      if (activeTool !== 'select') return;
+      e.stopPropagation();
+      deselectAll(); selectedEl = ov; selectedSvgEl = el;
+      ov.classList.add('selected'); el.setAttribute('stroke-opacity','0.8');
+      showPropsForElement(cel);
+      startSVGDrag(e, ov, el, cel);
+    });
+    elementsContainer.appendChild(ov);
+  } else {
+    // Line/arrow: two endpoint handles
+    ['1','2'].forEach(pt => {
+      const h = document.createElement('div');
+      h.style.cssText = `position:absolute;width:12px;height:12px;background:var(--green);border:2px solid #020810;border-radius:50%;cursor:move;z-index:28;transform:translate(-50%,-50%);left:${cel['x'+pt]}px;top:${cel['y'+pt]}px;pointer-events:all;`;
+      h.dataset.idx = idx;
+      h.addEventListener('click', e => { e.stopPropagation(); deselectAll(); selectedSvgEl = el; el.setAttribute('stroke-opacity','0.8'); showPropsForElement(cel); });
+      h.addEventListener('mousedown', e => {
+        if (activeTool !== 'select') return;
+        e.stopPropagation();
+        deselectAll(); selectedSvgEl = el; el.setAttribute('stroke-opacity','0.8'); showPropsForElement(cel);
+        const sx = e.clientX, sy = e.clientY;
+        const sv = cel['x'+pt], su = cel['y'+pt];
+        const onMove = ev => {
+          const scale = 1/zoomLevel;
+          const snp = snapPos(sv+(ev.clientX-sx)*scale, su+(ev.clientY-sy)*scale);
+          cel['x'+pt] = snp.x; cel['y'+pt] = snp.y;
+          el.setAttribute('x'+pt, snp.x); el.setAttribute('y'+pt, snp.y);
+          h.style.left = snp.x+'px'; h.style.top = snp.y+'px';
+          showSnapIndicators(snp.x, snp.y);
+        };
+        const onUp = () => { hideSnapIndicators(); markUnsaved(); document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+      elementsContainer.appendChild(h);
+    });
+  }
 }
+
+function startSVGDrag(e, ov, svgEl, cel) {
+  const sx=e.clientX, sy=e.clientY, sl=cel.x, st=cel.y;
+  const onMove = ev => {
+    const scale=1/zoomLevel;
+    const snp=snapPos(sl+(ev.clientX-sx)*scale, st+(ev.clientY-sy)*scale);
+    cel.x=snp.x; cel.y=snp.y;
+    ov.style.left=snp.x+'px'; ov.style.top=snp.y+'px';
+    if (cel.kind==='rect') { svgEl.setAttribute('x',snp.x); svgEl.setAttribute('y',snp.y); }
+    else if (cel.kind==='ellipse') { svgEl.setAttribute('cx',snp.x+cel.w/2); svgEl.setAttribute('cy',snp.y+cel.h/2); }
+    showSnapIndicators(snp.x, snp.y);
+  };
+  const onUp = () => { hideSnapIndicators(); markUnsaved(); document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function startSVGResize(e, ov, svgEl, cel, dir) {
+  const sx=e.clientX, sy=e.clientY, sW=cel.w, sH=cel.h, sL=cel.x, sT=cel.y, scale=1/zoomLevel;
+  const onMove = ev => {
+    const dx=(ev.clientX-sx)*scale, dy=(ev.clientY-sy)*scale;
+    let nW=sW,nH=sH,nL=sL,nT=sT;
+    if (dir.includes('e')) nW=Math.max(gridSize,sW+dx);
+    if (dir.includes('s')) nH=Math.max(gridSize,sH+dy);
+    if (dir.includes('w')) { nW=Math.max(gridSize,sW-dx); nL=sL+(sW-nW); }
+    if (dir.includes('n')) { nH=Math.max(gridSize,sH-dy); nT=sT+(sH-nH); }
+    if (snapEnabled) { nW=snapVal(nW,gridSize); nH=snapVal(nH,gridSize); }
+    cel.x=nL; cel.y=nT; cel.w=nW; cel.h=nH;
+    ov.style.cssText=`left:${nL}px;top:${nT}px;width:${nW}px;height:${nH}px;background:transparent;`;
+    if (cel.kind==='rect') { svgEl.setAttribute('x',nL); svgEl.setAttribute('y',nT); svgEl.setAttribute('width',nW); svgEl.setAttribute('height',nH); }
+    else if (cel.kind==='ellipse') { svgEl.setAttribute('cx',nL+nW/2); svgEl.setAttribute('cy',nT+nH/2); svgEl.setAttribute('rx',nW/2); svgEl.setAttribute('ry',nH/2); }
+  };
+  const onUp = () => { markUnsaved(); document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
 
 function ensureArrowMarker(color, idx) {
   const markerId = `arrowhead-${idx}`;
@@ -2960,6 +3056,7 @@ function selectSVGEl(el, idx) {
 function deselectAll() {
   if (selectedEl) { selectedEl.classList.remove('selected'); selectedEl = null; }
   if (selectedSvgEl) { selectedSvgEl.removeAttribute('stroke-opacity'); selectedSvgEl = null; }
+  document.querySelectorAll('.svg-shape-overlay.selected').forEach(o => o.classList.remove('selected'));
   showPropsEmpty();
 }
 
@@ -2980,7 +3077,6 @@ stage.addEventListener('mousedown', e => {
   if (activeTool === 'eyebrow') { addEyebrowElement(e); return; }
   if (activeTool === 'title')   { addTitleElement(e); return; }
   if (activeTool === 'text') { addTextBox(e); return; }
-  if (activeTool === 'bullet') { addBulletList(e); return; }
   if (activeTool === 'image') { openImagePicker(e); return; }
   // Shape drawing
   const shapeTools = ['rect','ellipse','line','arrow'];
@@ -3711,7 +3807,7 @@ document.getElementById('meta-notes').addEventListener('input', () => {
 
 const toolButtons = {
   select: 'tool-select', eyebrow: 'tool-eyebrow', title: 'tool-title',
-  text: 'tool-text', bullet: 'tool-bullet', image: 'tool-image',
+  text: 'tool-text', image: 'tool-image',
   rect: 'tool-rect', ellipse: 'tool-ellipse', line: 'tool-line', arrow: 'tool-arrow'
 };
 
@@ -3873,7 +3969,6 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.hasAttribute('contenteditable')) return;
   if (e.key === 'v' || e.key === 'V') setTool('select');
   if (e.key === 't' || e.key === 'T') setTool('text');
-  if (e.key === 'b' || e.key === 'B') setTool('bullet');
   if (e.key === 'r' || e.key === 'R') setTool('rect');
   if (e.key === 'l' || e.key === 'L') setTool('line');
   if (e.key === 'a' || e.key === 'A') setTool('arrow');
