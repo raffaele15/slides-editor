@@ -355,9 +355,17 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
   flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center;
   padding: 32px;
   background: rgba(2,8,16,0.5);
+  container-type: size;
 }
 #canvas-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
 #canvas-wrapper::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 3px; }
+
+#stage-scaler {
+  display: flex; align-items: center; justify-content: center;
+  width: 960px; height: 540px;
+  transform-origin: center center;
+  flex-shrink: 0;
+}
 
 #slide-stage {
   position: relative;
@@ -967,8 +975,7 @@ textarea.meta-input { height: 70px; }
 .rp-pane::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 2px; }
 
 /* Props pane (existing) */
-#pane-text { display: flex; flex-direction: column; overflow: hidden; }
-#pane-text.active { display: flex; }
+#pane-text.active { display: flex; flex-direction: column; overflow: hidden; }
 #pane-text #meta-inner { flex: 1; overflow-y: auto; }
 #pane-props { padding: 12px; }
 
@@ -1409,6 +1416,7 @@ textarea.meta-input { height: 70px; }
 
     <!-- CANVAS WRAPPER -->
     <div id="canvas-wrapper">
+      <div id="stage-scaler">
       <div id="slide-stage">
         <!-- Snap grid overlay -->
         <div id="snap-grid-overlay">
@@ -1427,7 +1435,8 @@ textarea.meta-input { height: 70px; }
         <div id="elements-container"></div>
         <!-- Drop zone -->
         <div id="drop-zone">Drop image here</div>
-      </div>
+      </div><!-- end slide-stage -->
+      </div><!-- end stage-scaler -->
       <!-- Zoom control -->
       <div id="zoom-ctrl">
         <button class="zoom-btn" id="zoom-out">−</button>
@@ -2751,7 +2760,9 @@ function addBulletList(e) {
     if (first) { first.focus(); document.execCommand('selectAll'); }
   }
   renderSidebar(); markUnsaved();
-  
+  setTool('select');
+}
+
 // ════════════════════════════════════════════════════════════════
 //  GOOGLE SLIDES IMPORTER
 // ════════════════════════════════════════════════════════════════
@@ -3147,7 +3158,6 @@ document.getElementById('pam-apply').addEventListener('click', () => {
 
 
 setTool('select');
-}
 
 // ── Image DOM Element ──
 function createImageDOMElement(cel, idx) {
@@ -3349,6 +3359,8 @@ function initDOMElement(wrapper, idx) {
   wrapper.addEventListener('mousedown', e => {
     if (e.target.classList.contains('resize-handle') || e.target.classList.contains('crop-handle')) return;
     if (e.target.closest('.el-actions')) return;
+    // Don't drag when the user is clicking inside a contenteditable (text selection)
+    if (e.target.isContentEditable || e.target.hasAttribute('contenteditable')) return;
     // Only consume the event in select mode — let non-select tools fall through to the stage
     if (activeTool !== 'select') return;
     e.stopPropagation();
@@ -3448,7 +3460,7 @@ function startDrag(e, wrapper, idx) {
   const startLeft = parseInt(wrapper.style.left), startTop = parseInt(wrapper.style.top);
   const kind = wrapper.dataset.kind;
   const onMove = ev => {
-    const scale = 1 / zoomLevel;
+    const scale = 1 / getEffectiveScale();
     let nx = startLeft + (ev.clientX - startX) * scale;
     let ny = startTop  + (ev.clientY - startY) * scale;
     const snapped = snapPos(nx, ny);
@@ -3490,7 +3502,7 @@ function startResize(e, wrapper, idx, dir) {
   const startX = e.clientX, startY = e.clientY;
   const startW = wrapper.offsetWidth, startH = wrapper.offsetHeight;
   const startL = parseInt(wrapper.style.left), startT = parseInt(wrapper.style.top);
-  const scale = 1 / zoomLevel;
+  const scale = 1 / getEffectiveScale();
 
   const onMove = ev => {
     const dx = (ev.clientX - startX) * scale;
@@ -3567,7 +3579,7 @@ function startCrop(e, wrapper, idx, dir) {
   const startClipRight  = cel.clipRight  || 0;
   const startClipBottom = cel.clipBottom || 0;
   const startClipLeft   = cel.clipLeft   || 0;
-  const scale = 1 / zoomLevel;
+  const scale = 1 / getEffectiveScale();
 
   const onMove = ev => {
     const dx = (ev.clientX - startX) * scale;
@@ -3621,11 +3633,21 @@ function deselectAll() {
 //  DRAWING (SVG shapes)
 // ════════════════════════════════════════════════════════════════
 
+function getEffectiveScale() {
+  const scaler = document.getElementById('stage-scaler');
+  if (!scaler) return zoomLevel;
+  // Parse the scale from the transform matrix
+  const t = scaler.style.transform;
+  const m = t.match(/scale\(([^)]+)\)/);
+  return m ? parseFloat(m[1]) : zoomLevel;
+}
+
 function getStageCoords(e) {
-  const rect = stage.getBoundingClientRect();
+  const rect  = stage.getBoundingClientRect();
+  const scale = getEffectiveScale();
   return {
-    x: (e.clientX - rect.left) / zoomLevel,
-    y: (e.clientY - rect.top)  / zoomLevel
+    x: (e.clientX - rect.left) / scale,
+    y: (e.clientY - rect.top)  / scale
   };
 }
 
@@ -4569,10 +4591,30 @@ document.getElementById('btn-add-phase').addEventListener('click', () => {
 // ════════════════════════════════════════════════════════════════
 
 function applyZoom() {
-  stage.style.transform = `scale(${zoomLevel})`;
-  stage.style.transformOrigin = 'center center';
+  fitStageToWrapper();
   document.getElementById('zoom-val').textContent = Math.round(zoomLevel * 100) + '%';
 }
+
+function fitStageToWrapper() {
+  const wrapper = document.getElementById('canvas-wrapper');
+  const scaler  = document.getElementById('stage-scaler');
+  if (!wrapper || !scaler) return;
+  const pad = 48; // padding inside wrapper
+  const aw = wrapper.clientWidth  - pad;
+  const ah = wrapper.clientHeight - pad;
+  const scaleX = aw / 960;
+  const scaleY = ah / 540;
+  const fit = Math.min(scaleX, scaleY, 1) * zoomLevel; // never exceed 100% unless zoomed
+  scaler.style.transform = `scale(${fit})`;
+  scaler.style.transformOrigin = 'center center';
+  // Update actual zoom display to show fit scale
+  document.getElementById('zoom-val').textContent = Math.round(fit * 100) + '%';
+}
+
+// Auto-fit on window resize
+const _stageResizeObserver = new ResizeObserver(() => fitStageToWrapper());
+_stageResizeObserver.observe(document.getElementById('canvas-wrapper'));
+
 document.getElementById('zoom-in').addEventListener('click', () => { zoomLevel = Math.min(2, zoomLevel + 0.1); applyZoom(); });
 document.getElementById('zoom-out').addEventListener('click', () => { zoomLevel = Math.max(0.3, zoomLevel - 0.1); applyZoom(); });
 
@@ -5322,6 +5364,7 @@ function blendHex(hex1, hex2, t) {
   return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
 }
 setTool('select');
+setTimeout(fitStageToWrapper, 50);
 </script>
 </body>
 </html>
