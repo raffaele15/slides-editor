@@ -51,7 +51,7 @@ body::before {
 
 /* ── TOPBAR ── */
 #topbar {
-  position: relative; z-index: 100;
+  position: relative; z-index: 600;
   display: flex; align-items: center;
   background: rgba(4,13,28,0.97);
   border-bottom: 1px solid var(--navy-600);
@@ -361,10 +361,12 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
 #canvas-wrapper::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 3px; }
 
 #stage-scaler {
-  display: flex; align-items: center; justify-content: center;
-  width: 960px; height: 540px;
-  transform-origin: center center;
+  /* Zero size wrapper — transform-origin top left so stage scales from its own corner.
+     The canvas-wrapper flex centering handles positioning. */
+  width: 0; height: 0;
+  transform-origin: top left;
   flex-shrink: 0;
+  overflow: visible;
 }
 
 #slide-stage {
@@ -2632,6 +2634,7 @@ function createBulletListElement(cel, idx) {
     <div class="resize-handle se" data-dir="se"></div>
     <div class="bullet-list-el">${buildBulletListHTML(cel)}</div>
   `;
+  const bll = wrapper.querySelector('.bullet-list-el');
   addRevealBadge(wrapper, cel);
 
   // Double-click → enter editing mode
@@ -4601,15 +4604,20 @@ function fitStageToWrapper() {
   const wrapper = document.getElementById('canvas-wrapper');
   const scaler  = document.getElementById('stage-scaler');
   if (!wrapper || !scaler) return;
-  const pad = 48; // padding inside wrapper
+  const pad = 48;
   const aw = wrapper.clientWidth  - pad;
   const ah = wrapper.clientHeight - pad;
   const scaleX = aw / 960;
   const scaleY = ah / 540;
-  const fit = Math.min(scaleX, scaleY, 1) * zoomLevel; // never exceed 100% unless zoomed
+  const fit = Math.min(scaleX, scaleY, 1) * zoomLevel;
+  // Scale from top-left; center manually with margin
+  const scaledW = 960 * fit;
+  const scaledH = 540 * fit;
+  const ml = Math.max(0, (wrapper.clientWidth  - scaledW) / 2);
+  const mt = Math.max(0, (wrapper.clientHeight - scaledH) / 2);
   scaler.style.transform = `scale(${fit})`;
-  scaler.style.transformOrigin = 'center center';
-  // Update actual zoom display to show fit scale
+  scaler.style.marginLeft = ml + 'px';
+  scaler.style.marginTop  = mt + 'px';
   document.getElementById('zoom-val').textContent = Math.round(fit * 100) + '%';
 }
 
