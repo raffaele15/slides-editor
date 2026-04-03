@@ -1897,13 +1897,18 @@ function renderSidebar() {
 }
 
 function buildPhaseList() {
+  const seen = [];
   const map = {};
   SLIDES.forEach((s, i) => {
     const pn = s.phase || 1;
-    if (!map[pn]) map[pn] = { phaseNum: pn, name: s.phaseName || ('Phase ' + pn), slides: [] };
+    if (!map[pn]) {
+      map[pn] = { phaseNum: pn, name: s.phaseName || ('Phase ' + pn), slides: [] };
+      seen.push(pn);
+    }
     map[pn].slides.push(i);
   });
-  return Object.values(map).sort((a, b) => a.phaseNum - b.phaseNum);
+  // Return in the order phases first appear in SLIDES (not sorted by phaseNum)
+  return seen.map(pn => map[pn]);
 }
 
 function handleSlideAction(act, idx) {
@@ -2002,6 +2007,16 @@ function startPhaseDrag(e, srcPi, srcPhaseNum) {
     const removedBefore = srcIndices.filter(i => i < insertAt).length;
     const adjInsert = Math.max(0, Math.min(insertAt - removedBefore, SLIDES.length));
     SLIDES.splice(adjInsert, 0, ...srcData);
+
+    // Renumber phases sequentially based on the new slide order
+    // so buildPhaseList's sort-by-phaseNum reflects the new arrangement
+    const seenPhaseNames = [];
+    SLIDES.forEach(s => {
+      if (!seenPhaseNames.includes(s.phaseName)) seenPhaseNames.push(s.phaseName);
+    });
+    SLIDES.forEach(s => {
+      s.phase = seenPhaseNames.indexOf(s.phaseName) + 1;
+    });
 
     currentSlideIdx = Math.min(currentSlideIdx, SLIDES.length - 1);
     renderSidebar(); renderTimeline(); selectSlide(currentSlideIdx); markUnsaved();
