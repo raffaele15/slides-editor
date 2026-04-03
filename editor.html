@@ -1732,9 +1732,9 @@ textarea.meta-input { height: 70px; }
     </div>
     <div class="gsm-body">
       <div class="gsm-field">
-        <div class="gsm-label">Google API Key <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--blue-200);font-size:8px;margin-left:6px">get one →</a></div>
-        <input class="gsm-input" id="gsm-api-key" type="password" placeholder="AIzaSy…" autocomplete="off">
-        <div style="font-size:8px;color:var(--dim);margin-top:3px">Enable the Google Slides API in your project. Key is stored locally only.</div>
+        <div class="gsm-label">Apps Script Proxy URL <a href="https://script.google.com" target="_blank" style="color:var(--blue-200);font-size:8px;margin-left:6px">script.google.com →</a></div>
+        <input class="gsm-input" id="gsm-proxy-url" type="text" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+        <div style="font-size:8px;color:var(--dim);margin-top:3px">Deploy the Apps Script proxy once — URL is saved locally.</div>
       </div>
       <div class="gsm-field">
         <div class="gsm-label">Presentation URL or ID</div>
@@ -2785,8 +2785,8 @@ let _gsImportedSlides = [];  // holds parsed slides before phase assignment
 
 // ── Open / close modal ──
 document.getElementById('btn-import-gslides').addEventListener('click', () => {
-  const saved = localStorage.getItem('gs_api_key');
-  if (saved) document.getElementById('gsm-api-key').value = saved;
+  const saved = localStorage.getItem('gs_proxy_url');
+  if (saved) document.getElementById('gsm-proxy-url').value = saved;
   document.getElementById('gsm-error').style.display = 'none';
   document.getElementById('gslides-modal').classList.add('open');
 });
@@ -2821,37 +2821,39 @@ function showGsmError(msg) {
 
 // ── Main fetch & parse ──
 document.getElementById('gsm-import-btn').addEventListener('click', async () => {
-  const apiKey = document.getElementById('gsm-api-key').value.trim();
-  const urlVal = document.getElementById('gsm-url').value.trim();
-  const keepTheme = document.getElementById('gsm-keep-theme').checked;
+  const proxyUrl = document.getElementById('gsm-proxy-url').value.trim();
+  const urlVal   = document.getElementById('gsm-url').value.trim();
+  const keepTheme   = document.getElementById('gsm-keep-theme').checked;
   const importNotes = document.getElementById('gsm-import-notes').checked;
   const importAnims = document.getElementById('gsm-import-anims').checked;
 
   document.getElementById('gsm-error').style.display = 'none';
-  if (!apiKey) { showGsmError('Please enter your Google API key.'); return; }
+  if (!proxyUrl) { showGsmError('Please enter your Apps Script proxy URL.'); return; }
+  if (!proxyUrl.includes('script.google.com')) {
+    showGsmError("That doesn't look like an Apps Script URL. It should start with https://script.google.com/macros/s/…"); return;
+  }
   const presId = extractPresentationId(urlVal);
   if (!presId) { showGsmError('Could not find a presentation ID in that URL.'); return; }
 
-  localStorage.setItem('gs_api_key', apiKey);
+  localStorage.setItem('gs_proxy_url', proxyUrl);
 
   const btn = document.getElementById('gsm-import-btn');
-  btn.textContent = 'Fetching…'; btn.disabled = true;
+  const origLabel = btn.innerHTML;
+  btn.innerHTML = 'Fetching…'; btn.disabled = true;
 
   try {
-    const url = `https://slides.googleapis.com/v1/presentations/${presId}?key=${encodeURIComponent(apiKey)}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${resp.status}`);
-    }
+    const fetchUrl = `${proxyUrl}?id=${encodeURIComponent(presId)}`;
+    const resp = await fetch(fetchUrl);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
+    if (data.error) throw new Error(data.error);
     _gsImportedSlides = parseGoogleSlides(data, { keepTheme, importNotes, importAnims });
     document.getElementById('gslides-modal').classList.remove('open');
     openPhaseAssignModal(_gsImportedSlides);
   } catch(e) {
-    showGsmError('Import failed: ' + e.message);
+    showGsmError('Import failed: ' + e.message + '. Make sure the script is deployed and the presentation is shared publicly.');
   } finally {
-    btn.textContent = 'Fetch & Import'; btn.disabled = false;
+    btn.innerHTML = origLabel; btn.disabled = false;
   }
 });
 
