@@ -3221,8 +3221,8 @@ function initDOMElement(wrapper, idx) {
   wrapper.addEventListener('mousedown', e => {
     if (e.target.classList.contains('resize-handle') || e.target.classList.contains('crop-handle')) return;
     if (e.target.closest('.el-actions')) return;
-    // Don't drag when the user is clicking inside a contenteditable (text selection)
-    if (e.target.isContentEditable || e.target.hasAttribute('contenteditable')) return;
+    // Don't drag when the user is clicking inside an *actively* editable text box
+    if (e.target.contentEditable === 'true') return;
     // Only consume the event in select mode — let non-select tools fall through to the stage
     if (activeTool !== 'select') return;
     e.stopPropagation();
