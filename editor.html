@@ -804,6 +804,7 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
 .gsm-btn.import { background: var(--green); color: #020810; font-weight: 500; }
 .gsm-btn.import:hover { background: #5ddfaa; }
 .gsm-btn:disabled { opacity: 0.4; pointer-events: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .pam-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
 .pam-body::-webkit-scrollbar { width: 3px; }
 .pam-body::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 2px; }
@@ -1696,19 +1697,15 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
     <div class="gsm-head">
       <div>
         <div class="gsm-title">Import from Google Slides</div>
-        <div class="gsm-sub">Paste your API key and presentation URL to import slides, text, shapes, and animations.</div>
+        <div class="gsm-sub">Paste your presentation URL — no API key or proxy needed. Images are embedded automatically.</div>
       </div>
       <button class="gsm-close" id="gsm-close">✕</button>
     </div>
     <div class="gsm-body">
       <div class="gsm-field">
-        <div class="gsm-label">Apps Script Proxy URL <a href="https://script.google.com" target="_blank" style="color:var(--blue-200);font-size:8px;margin-left:6px">script.google.com →</a></div>
-        <input class="gsm-input" id="gsm-proxy-url" type="text" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
-        <div style="font-size:8px;color:var(--dim);margin-top:3px">Deploy the Apps Script proxy once — URL is saved locally.</div>
-      </div>
-      <div class="gsm-field">
-        <div class="gsm-label">Presentation URL or ID</div>
+        <div class="gsm-label">Presentation URL</div>
         <input class="gsm-input" id="gsm-url" type="text" placeholder="https://docs.google.com/presentation/d/…">
+        <div style="font-size:8px;color:var(--dim);margin-top:3px">The presentation must be shared as <strong style="color:var(--blue-100)">"Anyone with the link can view"</strong>. No API key or proxy needed.</div>
       </div>
       <div class="gsm-options">
         <label class="gsm-opt-row">
@@ -1821,8 +1818,6 @@ const elementsContainer = document.getElementById('elements-container');
 document.getElementById('btn-open').addEventListener('click', () => document.getElementById('file-input').click());
 document.getElementById('es-open-btn').addEventListener('click', () => document.getElementById('file-input').click());
 document.getElementById('es-import-btn').addEventListener('click', () => {
-  const saved = localStorage.getItem('gs_proxy_url');
-  if (saved) document.getElementById('gsm-proxy-url').value = saved;
   document.getElementById('gsm-error').style.display = 'none';
   document.getElementById('gslides-modal').classList.add('open');
 });
@@ -2627,8 +2622,6 @@ let _gsImportedSlides = [];  // holds parsed slides before phase assignment
 
 // ── Open / close modal ──
 document.getElementById('btn-import-gslides').addEventListener('click', () => {
-  const saved = localStorage.getItem('gs_proxy_url');
-  if (saved) document.getElementById('gsm-proxy-url').value = saved;
   document.getElementById('gsm-error').style.display = 'none';
   document.getElementById('gslides-modal').classList.add('open');
 });
@@ -2663,99 +2656,229 @@ function showGsmError(msg) {
 
 // ── Main fetch & parse ──
 document.getElementById('gsm-import-btn').addEventListener('click', async () => {
-  const proxyUrl = document.getElementById('gsm-proxy-url').value.trim();
-  const urlVal   = document.getElementById('gsm-url').value.trim();
+  const urlVal      = document.getElementById('gsm-url').value.trim();
   const keepTheme   = document.getElementById('gsm-keep-theme').checked;
   const importNotes = document.getElementById('gsm-import-notes').checked;
   const importAnims = document.getElementById('gsm-import-anims').checked;
 
   document.getElementById('gsm-error').style.display = 'none';
-  if (!proxyUrl) { showGsmError('Please enter your Apps Script proxy URL.'); return; }
-  if (!proxyUrl.includes('script.google.com')) {
-    showGsmError("That doesn't look like an Apps Script URL. It should start with https://script.google.com/macros/s/…"); return;
-  }
-  const presId = extractPresentationId(urlVal);
-  if (!presId) { showGsmError('Could not find a presentation ID in that URL.'); return; }
-
-  localStorage.setItem('gs_proxy_url', proxyUrl);
+  if (!urlVal) { showGsmError('Please enter a presentation URL.'); return; }
 
   const btn = document.getElementById('gsm-import-btn');
   const origLabel = btn.innerHTML;
-  btn.innerHTML = 'Fetching…'; btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;margin-right:5px;animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg>Importing…';
+  btn.disabled = true;
 
   try {
-    const fetchUrl = `${proxyUrl}?id=${encodeURIComponent(presId)}`;
-    const resp = await fetch(fetchUrl);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error);
-    _gsImportedSlides = parseGoogleSlides(data, { keepTheme, importNotes, importAnims });
+    const opts = { keepTheme, importNotes, importAnims };
+    const pptxSlides = await importFromPPTX(urlVal, opts);
+    _gsImportedSlides = pptxSlidesToSlides(pptxSlides, opts);
     document.getElementById('gslides-modal').classList.remove('open');
     openPhaseAssignModal(_gsImportedSlides);
   } catch(e) {
-    showGsmError('Import failed: ' + e.message + '. Make sure the script is deployed and the presentation is shared publicly.');
+    showGsmError('Import failed: ' + e.message);
   } finally {
     btn.innerHTML = origLabel; btn.disabled = false;
   }
 });
 
 // ── Parse Google Slides API response → our SLIDES format ──
-// ── Parse Google Slides proxy response → SLIDES array ──
-// The proxy (slides-proxy.gs) returns elements already converted to our
-// 960×540 coordinate space with x/y/w/h in pixels.
-function parseGoogleSlides(data, opts) {
-  const slides = data.slides || [];
-  return slides.map((slide) => {
-    const canvasElements = [];
-    let titleText = '', eyebrowText = '';
 
-    (slide.pageElements || []).forEach(el => {
-      if (!el) return;
-      const x = el.x || 0, y = el.y || 0;
-      const w = el.w || el.width || 200;
-      const h = el.h || el.height || 100;
+// ════════════════════════════════════════════════════════════════
+//  PPTX IMPORTER  — fetches Google Slides as PPTX, parses in browser
+// ════════════════════════════════════════════════════════════════
 
-      if (el.kind === 'text' && el.content) {
-        const content = el.content.trim();
-        if (!content) return;
-        const fontSize = el.fontSize || 16;
-        const color = opts.keepTheme ? '#f0f6ff' : (el.color || '#f0f6ff');
+const PPTX_SCALE_X = 960 / 9144000;
+const PPTX_SCALE_Y = 540 / 5143500;
 
-        // Heuristic: large text near the top → title
-        if (!titleText && y < SLIDE_H * 0.35 && fontSize >= 18) {
-          titleText = content;
-          canvasElements.push({ kind: 'title', x, y, w, fontSize,
-                                color: opts.keepTheme ? '#f0f6ff' : color, content });
-        } else {
-          canvasElements.push({ kind: 'text', x, y, w, content, fontSize, color });
+function loadJSZip() {
+  return new Promise((resolve, reject) => {
+    if (window.JSZip) { resolve(window.JSZip); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => resolve(window.JSZip);
+    s.onerror = () => reject(new Error('Failed to load JSZip'));
+    document.head.appendChild(s);
+  });
+}
+
+async function importFromPPTX(presUrl, opts) {
+  const presId = extractPresentationId(presUrl);
+  if (!presId) throw new Error('Could not find a presentation ID in that URL');
+
+  const JSZip = await loadJSZip();
+  const exportUrl = `https://docs.google.com/presentation/d/${presId}/export/pptx`;
+  const resp = await fetch(exportUrl);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} — make sure the presentation is shared as "Anyone with the link can view"`);
+
+  const zip = await JSZip.loadAsync(await resp.arrayBuffer());
+
+  // Count slides
+  const presXml = await zip.file('ppt/presentation.xml').async('text');
+  const slideCount = (presXml.match(/<p:sldId /g) || []).length;
+
+  const slides = [];
+  for (let i = 1; i <= slideCount; i++) {
+    const slideFile = zip.file(`ppt/slides/slide${i}.xml`);
+    const relsFile  = zip.file(`ppt/slides/_rels/slide${i}.xml.rels`);
+    if (!slideFile) continue;
+
+    const slideXml = await slideFile.async('text');
+    const relsXml  = relsFile ? await relsFile.async('text') : '';
+
+    // Build rId → media path map
+    const relMap = {};
+    for (const m of relsXml.matchAll(/Id="([^"]+)"[^>]+Target="([^"]+)"/g)) {
+      relMap[m[1]] = m[2].startsWith('../') ? 'ppt/' + m[2].slice(3) : m[2];
+    }
+
+    const elements = await parseSlideXml(slideXml, relMap, zip, opts);
+
+    let notes = '';
+    if (opts.importNotes) {
+      const notesFile = zip.file(`ppt/notesSlides/notesSlide${i}.xml`);
+      if (notesFile) notes = extractPptxNotes(await notesFile.async('text'));
+    }
+
+    slides.push({ elements, notes });
+  }
+  return slides;
+}
+
+async function parseSlideXml(xml, relMap, zip, opts) {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const spTree = doc.querySelector('spTree') || doc.documentElement;
+  const elements = [];
+
+  for (const sp of spTree.querySelectorAll('sp'))  { const e = parseShape(sp, opts);                if (e) elements.push(e); }
+  for (const pic of spTree.querySelectorAll('pic')) { const e = await parsePicture(pic, relMap, zip); if (e) elements.push(e); }
+  for (const cxn of spTree.querySelectorAll('cxnSp')) { const e = parseConnector(cxn);              if (e) elements.push(e); }
+
+  return elements;
+}
+
+function parseShape(sp, opts) {
+  const xfrm = sp.querySelector('xfrm');
+  if (!xfrm) return null;
+  const off = xfrm.querySelector('off'), ext = xfrm.querySelector('ext');
+  if (!off || !ext) return null;
+
+  const x = Math.round(parseInt(off.getAttribute('x')||0) * PPTX_SCALE_X);
+  const y = Math.round(parseInt(off.getAttribute('y')||0) * PPTX_SCALE_Y);
+  const w = Math.round(parseInt(ext.getAttribute('cx')||0) * PPTX_SCALE_X);
+  const h = Math.round(parseInt(ext.getAttribute('cy')||0) * PPTX_SCALE_Y);
+
+  const txBody = sp.querySelector('txBody');
+  if (!txBody) return null;
+
+  let dominantSize = 0, dominantColor = opts.keepTheme ? '#f0f6ff' : null;
+  const lines = [];
+
+  for (const p of txBody.querySelectorAll('p')) {
+    const runs = p.querySelectorAll('r');
+    if (!runs.length) { lines.push(''); continue; }
+    let line = '';
+    for (const r of runs) {
+      const t = r.querySelector('t');
+      if (t) line += t.textContent;
+      const rPr = r.querySelector('rPr');
+      if (rPr) {
+        const sz = parseInt(rPr.getAttribute('sz')||0);
+        if (sz > dominantSize) {
+          dominantSize = sz;
+          if (!opts.keepTheme) {
+            const srgb = rPr.querySelector('srgbClr');
+            if (srgb) dominantColor = '#' + srgb.getAttribute('val');
+          }
         }
-      } else if (el.kind === 'image') {
-        // Skip fallback slide thumbnails — they show the whole slide, not individual images
-        if (el.isSlideThumbnail) return;
-        const imgSrc = el.src || '';
-        // Allow: inserted-by-URL sources, and Google Drive public share links
-        const isDrivePublic = imgSrc.includes('drive.google.com/uc');
-        const isDirectUrl   = imgSrc.startsWith('http') && !imgSrc.includes('googleusercontent.com');
-        canvasElements.push({ kind: 'image', x, y, w, h,
-          src: (isDrivePublic || isDirectUrl) ? imgSrc : '',
-          caption: '', clipTop: 0, clipRight: 0, clipBottom: 0, clipLeft: 0 });
-      } else if (el.kind === 'line') {
-        canvasElements.push({ kind: 'line',
-          x1: el.x1 || x, y1: el.y1 || y,
-          x2: el.x2 || (x + w), y2: el.y2 || (y + h),
-          stroke: '#72a8e8', strokeWidth: 2 });
+      }
+    }
+    lines.push(line);
+  }
+
+  while (lines.length && !lines[0].trim()) lines.shift();
+  while (lines.length && !lines[lines.length-1].trim()) lines.pop();
+  const content = lines.join('\n').trim();
+  if (!content) return null;
+
+  const fontSize = dominantSize > 0 ? Math.round(dominantSize / 100) : 16;
+  return { kind: 'text', x, y, w, h, content, fontSize, color: dominantColor || '#f0f6ff' };
+}
+
+async function parsePicture(pic, relMap, zip) {
+  const xfrm = pic.querySelector('xfrm');
+  if (!xfrm) return null;
+  const off = xfrm.querySelector('off'), ext = xfrm.querySelector('ext');
+  if (!off || !ext) return null;
+
+  const x = Math.round(parseInt(off.getAttribute('x')||0) * PPTX_SCALE_X);
+  const y = Math.round(parseInt(off.getAttribute('y')||0) * PPTX_SCALE_Y);
+  const w = Math.round(parseInt(ext.getAttribute('cx')||0) * PPTX_SCALE_X);
+  const h = Math.round(parseInt(ext.getAttribute('cy')||0) * PPTX_SCALE_Y);
+
+  const blip = pic.querySelector('blip');
+  if (!blip) return null;
+  const rId = blip.getAttribute('r:embed') ||
+              blip.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','embed');
+  if (!rId || !relMap[rId]) return null;
+
+  const mediaFile = zip.file(relMap[rId]);
+  if (!mediaFile) return null;
+
+  try {
+    const blob = await mediaFile.async('blob');
+    const src  = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = e => res(e.target.result);
+      fr.onerror = rej;
+      fr.readAsDataURL(blob);
+    });
+    return { kind: 'image', x, y, w, h, src, caption: '', clipTop:0, clipRight:0, clipBottom:0, clipLeft:0 };
+  } catch(e) { return null; }
+}
+
+function parseConnector(cxn) {
+  const xfrm = cxn.querySelector('xfrm');
+  if (!xfrm) return null;
+  const off = xfrm.querySelector('off'), ext = xfrm.querySelector('ext');
+  if (!off || !ext) return null;
+  const x = Math.round(parseInt(off.getAttribute('x')||0) * PPTX_SCALE_X);
+  const y = Math.round(parseInt(off.getAttribute('y')||0) * PPTX_SCALE_Y);
+  const w = Math.round(parseInt(ext.getAttribute('cx')||0) * PPTX_SCALE_X);
+  const h = Math.round(parseInt(ext.getAttribute('cy')||0) * PPTX_SCALE_Y);
+  return { kind: 'line', x1: x, y1: y, x2: x+w, y2: y+h, stroke: '#72a8e8', strokeWidth: 2 };
+}
+
+function extractPptxNotes(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const sps = doc.querySelectorAll('sp');
+  for (let i = 1; i < sps.length; i++) {
+    const texts = [...sps[i].querySelectorAll('t')].map(t => t.textContent).filter(t => t.trim());
+    if (texts.length) return texts.join(' ').trim();
+  }
+  return '';
+}
+
+function pptxSlidesToSlides(pptxSlides, opts) {
+  return pptxSlides.map(({ elements, notes }) => {
+    const canvasElements = [];
+    let titleText = '';
+
+    elements.forEach(el => {
+      if (el.kind === 'text' && !titleText && el.y < SLIDE_H * 0.35 && el.fontSize >= 18) {
+        titleText = el.content;
+        canvasElements.push({ kind: 'title', x: el.x, y: el.y, w: el.w,
+          fontSize: el.fontSize, color: opts.keepTheme ? '#f0f6ff' : el.color, content: el.content });
+      } else {
+        canvasElements.push(el);
       }
     });
 
-    const notes = opts.importNotes ? (slide.notes || '') : '';
-
     return {
-      phase: 1, phaseName: 'Phase 1',
-      type: 'content',
+      phase: 1, phaseName: 'Phase 1', type: 'content',
       eyebrow: '', title: titleText,
       body: '', image: '', imageCaption: '', imagePosition: 'right',
-      notes,
-      canvasElements,
+      notes, canvasElements,
     };
   });
 }
