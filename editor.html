@@ -59,7 +59,10 @@ body::before {
   height: 52px;
   gap: 12px;
   flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+#topbar::-webkit-scrollbar { display: none; }
 .tb-logo {
   font-family: 'DM Serif Display', serif;
   font-size: 15px; color: var(--white);
@@ -320,8 +323,11 @@ body::before {
   background: rgba(7,22,40,0.98);
   border-bottom: 1px solid var(--navy-600);
   flex-shrink: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+#tool-ribbon::-webkit-scrollbar { display: none; }
 .tr-group { display: flex; align-items: center; gap: 3px; }
 .tr-sep { width: 1px; height: 22px; background: var(--navy-600); margin: 0 4px; flex-shrink: 0; }
 .tr-btn {
@@ -364,11 +370,9 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
 #canvas-wrapper::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 3px; }
 
 #stage-scaler {
-  /* Scaler wrapper — always 960×540, transform scales it visually.
-     The grid parent centers it. When zoomed large, wrapper scrolls. */
   width: 960px; height: 540px;
   flex-shrink: 0;
-  transform-origin: top left;
+  transform-origin: center center;
 }
 
 #slide-stage {
@@ -1605,8 +1609,7 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
 <!-- ── EMPTY STATE ── -->
 <div id="empty-state">
   <div class="es-icon">📄</div>
-  <div class="es-title">Lab Slide Editor</div>
-  <div class="es-sub">Create a new presentation or load an existing one to start editing.</div>
+  <div class="es-title">Slide Editor</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
     <button class="es-btn" id="es-new-btn">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
@@ -1701,7 +1704,7 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
     <div class="gsm-head">
       <div>
         <div class="gsm-title">Import from Google Slides</div>
-        <div class="gsm-sub">Paste your presentation URL — no API key or proxy needed. Images are embedded automatically.</div>
+
       </div>
       <button class="gsm-close" id="gsm-close">✕</button>
     </div>
@@ -1709,7 +1712,7 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
       <div class="gsm-field">
         <div class="gsm-label">Presentation URL</div>
         <input class="gsm-input" id="gsm-url" type="text" placeholder="https://docs.google.com/presentation/d/…">
-        <div style="font-size:8px;color:var(--dim);margin-top:3px">The presentation must be shared as <strong style="color:var(--blue-100)">"Anyone with the link can view"</strong>. No API key or proxy needed.</div>
+        <div style="font-size:8px;color:var(--dim);margin-top:3px">The presentation must be <strong style="color:var(--blue-100)">published to the web</strong> (File → Share → Publish to web) and shared as "Anyone with the link can view".</div>
       </div>
       <div class="gsm-options">
         <label class="gsm-opt-row">
@@ -4478,17 +4481,14 @@ function fitStageToWrapper() {
   const wrapper = document.getElementById('canvas-wrapper');
   const scaler  = document.getElementById('stage-scaler');
   if (!wrapper || !scaler) return;
-  const pad = 48;
+  const pad = 40;
   const aw = Math.max(1, wrapper.clientWidth  - pad);
   const ah = Math.max(1, wrapper.clientHeight - pad);
-  const fit = Math.min(aw / 960, ah / 540, 1) * zoomLevel;
-  // With transform-origin top left, scaling shrinks toward the top-left corner.
-  // Compensate with translate so the scaled stage stays visually centered.
-  const scaledW = 960 * fit;
-  const scaledH = 540 * fit;
-  const tx = (960 - scaledW) / 2;   // shift right by half the lost width
-  const ty = (540 - scaledH) / 2;   // shift down  by half the lost height
-  scaler.style.transform = `translate(${tx}px, ${ty}px) scale(${fit})`;
+  const fit = Math.min(aw / 960, ah / 540) * zoomLevel;
+  // transform-origin: center center — scale shrinks/grows from center.
+  // The grid (place-items:center) keeps the 960×540 layout box centered.
+  // This means the visual always stays centered regardless of fit value.
+  scaler.style.transform = `scale(${fit})`;
   document.getElementById('zoom-val').textContent = Math.round(fit * 100) + '%';
 }
 
