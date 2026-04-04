@@ -2730,13 +2730,14 @@ function parseGoogleSlides(data, opts) {
           canvasElements.push({ kind: 'text', x, y, w, content, fontSize, color });
         }
       } else if (el.kind === 'image') {
-        // Only include images with a public http(s) src — authenticated Drive
-        // URLs fail silently and stall the browser with repeated retries.
-        // Users can replace the placeholder manually after import.
+        // Skip fallback slide thumbnails — they show the whole slide, not individual images
+        if (el.isSlideThumbnail) return;
         const imgSrc = el.src || '';
-        const isPublic = imgSrc.startsWith('http') && !imgSrc.includes('googleusercontent') && !imgSrc.includes('drive.google');
+        // Allow: inserted-by-URL sources, and Google Drive public share links
+        const isDrivePublic = imgSrc.includes('drive.google.com/uc');
+        const isDirectUrl   = imgSrc.startsWith('http') && !imgSrc.includes('googleusercontent.com');
         canvasElements.push({ kind: 'image', x, y, w, h,
-          src: isPublic ? imgSrc : '',
+          src: (isDrivePublic || isDirectUrl) ? imgSrc : '',
           caption: '', clipTop: 0, clipRight: 0, clipBottom: 0, clipLeft: 0 });
       } else if (el.kind === 'line') {
         canvasElements.push({ kind: 'line',
