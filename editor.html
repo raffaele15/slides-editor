@@ -2481,10 +2481,7 @@ function saveCurrentCanvas() {
     const cel = SLIDES[currentSlideIdx].canvasElements[idx];
     if (!cel) return;
     if (cel.kind === 'text') {
-      const tb = el.querySelector('.text-box-el');
-      // Only update content if actively editing — don't overwrite with rendered HTML
-      if (tb && tb.getAttribute('contenteditable') === 'true') cel.content = tb.textContent;
-      // else: content already saved on blur, leave it
+      // content saved in blur handler
     } else if (cel.kind === 'eyebrow' || cel.kind === 'title') {
       const tb = el.querySelector('.text-box-el');
       if (tb) { cel.content = tb.textContent; }
@@ -3320,11 +3317,12 @@ function initDOMElement(wrapper, idx) {
     });
     wrapper.querySelector('.text-box-el').addEventListener('blur', () => {
       const tb = wrapper.querySelector('.text-box-el');
-      tb.removeAttribute('contenteditable');
-      syncCelFromDOM(wrapper, idx);
-      // Re-render as formatted HTML
+      // Save content BEFORE removing contenteditable
       const cel = SLIDES[currentSlideIdx].canvasElements[idx];
-      tb.innerHTML = renderTextContent(cel.content || '');
+      if (cel) cel.content = tb.textContent;
+      tb.removeAttribute('contenteditable');
+      // Re-render as formatted HTML
+      tb.innerHTML = renderTextContent(cel ? cel.content : '');
       markUnsaved();
     });
   }
@@ -3375,10 +3373,7 @@ function syncCelFromDOM(wrapper, idx) {
   cel.y = parseInt(wrapper.style.top);
   cel.w = wrapper.offsetWidth;
   cel.h = wrapper.offsetHeight;
-  if (cel.kind === 'text') {
-    const tb = wrapper.querySelector('.text-box-el');
-    if (tb && tb.getAttribute('contenteditable') === 'true') cel.content = tb.textContent;
-  }
+  // text content saved in blur handler
 }
 
 // ── Drag ──
