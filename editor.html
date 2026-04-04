@@ -352,21 +352,23 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
 
 /* ── CANVAS AREA ── */
 #canvas-wrapper {
-  flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center;
-  padding: 32px;
+  flex: 1; overflow: auto;
   background: rgba(2,8,16,0.5);
-  container-type: size;
+  /* Grid centering: stage sits in the middle, scrollable when zoomed large */
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  box-sizing: border-box;
 }
 #canvas-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
 #canvas-wrapper::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 3px; }
 
 #stage-scaler {
-  /* Zero size wrapper — transform-origin top left so stage scales from its own corner.
-     The canvas-wrapper flex centering handles positioning. */
-  width: 0; height: 0;
-  transform-origin: top left;
+  /* Scaler wrapper — always 960×540, transform scales it visually.
+     The grid parent centers it. When zoomed large, wrapper scrolls. */
+  width: 960px; height: 540px;
   flex-shrink: 0;
-  overflow: visible;
+  transform-origin: top left;
 }
 
 #slide-stage {
@@ -2688,176 +2690,59 @@ document.getElementById('gsm-import-btn').addEventListener('click', async () => 
 });
 
 // ── Parse Google Slides API response → our SLIDES format ──
+// ── Parse Google Slides proxy response → SLIDES array ──
+// The proxy (slides-proxy.gs) returns elements already converted to our
+// 960×540 coordinate space with x/y/w/h in pixels.
 function parseGoogleSlides(data, opts) {
   const slides = data.slides || [];
-  const parsed = [];
-
-  slides.forEach((slide, si) => {
-    const elements = slide.pageElements || [];
-    const animations = buildAnimMap(slide.slideProperties?.notesSlide, slide);
-    const notes = opts.importNotes ? extractNotes(slide) : '';
-
+  return slides.map((slide) => {
     const canvasElements = [];
     let titleText = '', eyebrowText = '';
 
-    elements.forEach(el => {
-      const cel = parseElement(el, opts, animations);
-      if (!cel) return;
-      // Heuristic: tallest/largest text in top 25% of slide is the title
-      if (cel.kind === 'text' && cel.y < SLIDE_H * 0.3 && cel.fontSize >= 20 && !titleText) {
-        titleText = cel.content;
-        cel.kind = 'title';
-        cel.w = cel.w || 820;
-      } else if (cel.kind === 'text' && cel.y < SLIDE_H * 0.2 && cel.fontSize < 16 && !eyebrowText) {
-        eyebrowText = cel.content;
-        cel.kind = 'eyebrow';
+    (slide.pageElements || []).forEach(el => {
+      if (!el) return;
+      const x = el.x || 0, y = el.y || 0;
+      const w = el.w || el.width || 200;
+      const h = el.h || el.height || 100;
+
+      if (el.kind === 'text' && el.content) {
+        const content = el.content.trim();
+        if (!content) return;
+        const fontSize = el.fontSize || 16;
+        const color = opts.keepTheme ? '#f0f6ff' : (el.color || '#f0f6ff');
+
+        // Heuristic: large text near the top → title
+        if (!titleText && y < SLIDE_H * 0.35 && fontSize >= 18) {
+          titleText = content;
+          canvasElements.push({ kind: 'title', x, y, w, fontSize,
+                                color: opts.keepTheme ? '#f0f6ff' : color, content });
+        } else {
+          canvasElements.push({ kind: 'text', x, y, w, content, fontSize, color });
+        }
+      } else if (el.kind === 'image') {
+        if (el.src) {
+          canvasElements.push({ kind: 'image', x, y, w, h, src: el.src,
+                                caption: '', clipTop: 0, clipRight: 0, clipBottom: 0, clipLeft: 0 });
+        }
+      } else if (el.kind === 'line') {
+        canvasElements.push({ kind: 'line',
+          x1: el.x1 || x, y1: el.y1 || y,
+          x2: el.x2 || (x + w), y2: el.y2 || (y + h),
+          stroke: '#72a8e8', strokeWidth: 2 });
       }
-      canvasElements.push(cel);
     });
 
-    parsed.push({
+    const notes = opts.importNotes ? (slide.notes || '') : '';
+
+    return {
       phase: 1, phaseName: 'Phase 1',
-      type: titleText ? 'content' : 'content',
-      eyebrow: eyebrowText, title: titleText,
+      type: 'content',
+      eyebrow: '', title: titleText,
       body: '', image: '', imageCaption: '', imagePosition: 'right',
       notes,
       canvasElements,
-    });
-  });
-
-  return parsed;
-}
-
-// ── Build animation lookup: objectId → { revealOrder, revealAnim, trigger } ──
-function buildAnimMap(notesSlide, slide) {
-  const map = {};
-  const animations = slide.slideProperties?.notesSlide?.pageProperties ||
-    slide.animations || [];
-  // Google Slides API stores animations in slide.pageElements[N].slideProperties is wrong
-  // Real path: the presentation-level animations are in slide.animations (if fetched with fields)
-  // But the v1 API returns animations per slide under slide.animations
-  // They come as an array of animation steps
-  (slide.animations || []).forEach((anim, i) => {
-    const objId = anim.animationProperties?.objectId;
-    const type = anim.animationProperties?.animationProperties?.appearEffect || 'APPEAR';
-    const trigger = anim.animationProperties?.animationTrigger?.triggerType || 'ON_CLICK';
-    // ON_CLICK increments the step counter; AFTER_PREVIOUS shares with previous
-    if (objId) {
-      map[objId] = {
-        revealOrder: i,
-        revealAnim: ANIM_MAP[type] || 'fade',
-        trigger,
-      };
-    }
-  });
-  return map;
-}
-
-// ── Parse a single page element ──
-function parseElement(el, opts, animMap) {
-  if (!el.objectId) return null;
-  const t = el.transform;
-  // Convert EMU transform to px
-  const x = t ? Math.round((t.translateX || 0) * EMU_TO_PX_X) : 0;
-  const y = t ? Math.round((t.translateY || 0) * EMU_TO_PX_Y) : 0;
-  const w = el.size ? Math.round(el.size.width.magnitude * EMU_TO_PX_X) : 100;
-  const h = el.size ? Math.round(el.size.height.magnitude * EMU_TO_PX_Y) : 40;
-
-  const anim = opts.importAnims ? animMap[el.objectId] : null;
-  const revealProps = anim ? { reveal: true, revealOrder: anim.revealOrder, revealAnim: anim.revealAnim } : {};
-
-  // ── Text shapes ──
-  if (el.shape?.text) {
-    const { plainText, fontSize, bold, color } = extractTextContent(el.shape.text, opts);
-    if (!plainText.trim()) return null;
-    const displayColor = opts.keepTheme ? '#f0f6ff' : (color || '#f0f6ff');
-    return { kind: 'text', x, y, w, content: plainText, fontSize: fontSize || 16, color: displayColor, ...revealProps };
-  }
-
-  // ── Images ──
-  if (el.image) {
-    const src = el.image.sourceUrl || el.image.contentUrl || '';
-    return { kind: 'image', x, y, w, h, src, caption: '', clipTop: 0, clipRight: 0, clipBottom: 0, clipLeft: 0, ...revealProps };
-  }
-
-  // ── Basic shapes ──
-  if (el.shape) {
-    const shapeType = el.shape.shapeType || '';
-    const fill = el.shape.shapeProperties?.shapeBackground?.solidFill?.color?.rgbColor;
-    const border = el.shape.shapeProperties?.outline?.outlineFill?.solidFill?.color?.rgbColor;
-    const fillHex = fill ? rgbToHex(fill) : 'none';
-    const strokeHex = border ? rgbToHex(border) : '#72a8e8';
-    if (shapeType === 'ELLIPSE') {
-      return { kind: 'ellipse', x, y, w, h, fill: opts.keepTheme ? 'none' : fillHex, stroke: opts.keepTheme ? '#72a8e8' : strokeHex, strokeWidth: 2, ...revealProps };
-    }
-    if (['RECTANGLE','ROUND_RECTANGLE','TEXT_BOX'].includes(shapeType)) {
-      return { kind: 'rect', x, y, w, h, fill: opts.keepTheme ? 'none' : fillHex, stroke: opts.keepTheme ? '#72a8e8' : strokeHex, strokeWidth: 2, ...revealProps };
-    }
-  }
-
-  // ── Lines ──
-  if (el.line) {
-    const stroke = el.line.lineProperties?.lineFill?.solidFill?.color?.rgbColor;
-    const strokeHex = stroke ? rgbToHex(stroke) : '#72a8e8';
-    const isArrow = el.line.lineProperties?.endArrow?.arrowStyle === 'ARROW';
-    return {
-      kind: isArrow ? 'arrow' : 'line',
-      x1: x, y1: y,
-      x2: x + w, y2: y + h,
-      stroke: opts.keepTheme ? '#72a8e8' : strokeHex,
-      strokeWidth: 2, ...revealProps,
     };
-  }
-
-  return null;
-}
-
-// ── Extract plain text and dominant style from a Google text content object ──
-function extractTextContent(textContent, opts) {
-  let plainText = '';
-  let fontSize = 16;
-  let bold = false;
-  let color = '#f0f6ff';
-
-  (textContent.textElements || []).forEach(te => {
-    if (te.textRun) {
-      plainText += te.textRun.content;
-      const style = te.textRun.style || {};
-      if (style.fontSize?.magnitude) fontSize = Math.round(style.fontSize.magnitude);
-      if (style.bold) bold = true;
-      if (style.foregroundColor?.opaqueColor?.rgbColor && !opts.keepTheme) {
-        color = rgbToHex(style.foregroundColor.opaqueColor.rgbColor);
-      }
-    } else if (te.paragraphMarker) {
-      // End of paragraph — add newline if not already there
-      if (!plainText.endsWith('\n')) plainText += '\n';
-    }
   });
-
-  // Clean up trailing newline
-  plainText = plainText.replace(/\n+$/, '').trim();
-  return { plainText, fontSize, bold, color };
-}
-
-// ── Extract speaker notes ──
-function extractNotes(slide) {
-  const notesPage = slide.slideProperties?.notesPage;
-  if (!notesPage) return '';
-  for (const el of (notesPage.pageElements || [])) {
-    if (el.shape?.text) {
-      const { plainText } = extractTextContent(el.shape.text, { keepTheme: true });
-      if (plainText.trim()) return plainText.trim();
-    }
-  }
-  return '';
-}
-
-// ── RGB object → hex ──
-function rgbToHex(rgb) {
-  const r = Math.round((rgb.red || 0) * 255);
-  const g = Math.round((rgb.green || 0) * 255);
-  const b = Math.round((rgb.blue || 0) * 255);
-  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -3469,7 +3354,6 @@ function deselectAll() {
 function getEffectiveScale() {
   const scaler = document.getElementById('stage-scaler');
   if (!scaler) return zoomLevel;
-  // Parse the scale from the transform matrix
   const t = scaler.style.transform;
   const m = t.match(/scale\(([^)]+)\)/);
   return m ? parseFloat(m[1]) : zoomLevel;
@@ -4398,19 +4282,16 @@ function fitStageToWrapper() {
   const scaler  = document.getElementById('stage-scaler');
   if (!wrapper || !scaler) return;
   const pad = 48;
-  const aw = wrapper.clientWidth  - pad;
-  const ah = wrapper.clientHeight - pad;
-  const scaleX = aw / 960;
-  const scaleY = ah / 540;
-  const fit = Math.min(scaleX, scaleY, 1) * zoomLevel;
-  // Scale from top-left; center manually with margin
+  const aw = Math.max(1, wrapper.clientWidth  - pad);
+  const ah = Math.max(1, wrapper.clientHeight - pad);
+  const fit = Math.min(aw / 960, ah / 540, 1) * zoomLevel;
+  // With transform-origin top left, scaling shrinks toward the top-left corner.
+  // Compensate with translate so the scaled stage stays visually centered.
   const scaledW = 960 * fit;
   const scaledH = 540 * fit;
-  const ml = Math.max(0, (wrapper.clientWidth  - scaledW) / 2);
-  const mt = Math.max(0, (wrapper.clientHeight - scaledH) / 2);
-  scaler.style.transform = `scale(${fit})`;
-  scaler.style.marginLeft = ml + 'px';
-  scaler.style.marginTop  = mt + 'px';
+  const tx = (960 - scaledW) / 2;   // shift right by half the lost width
+  const ty = (540 - scaledH) / 2;   // shift down  by half the lost height
+  scaler.style.transform = `translate(${tx}px, ${ty}px) scale(${fit})`;
   document.getElementById('zoom-val').textContent = Math.round(fit * 100) + '%';
 }
 
