@@ -96,10 +96,18 @@ body::before {
 }
 .tb-file-label.loaded { color: var(--blue-200); }
 #rename-input {
-  display: none; background: var(--navy-700); border: 1px solid var(--blue-400);
+  background: var(--navy-700); border: 1px solid var(--blue-400); border-right: none;
   color: var(--white); font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px; padding: 2px 6px; border-radius: 3px; outline: none;
-  flex: 1; min-width: 0; max-width: 240px;
+  font-size: 11px; padding: 2px 4px; border-radius: 3px 0 0 3px; outline: none;
+  min-width: 40px; max-width: 180px; width: auto;
+}
+#rename-inline { display: none; }
+#rename-inline.active { display: flex !important; align-items: center; }
+#rename-ext {
+  background: var(--navy-700); border: 1px solid var(--blue-400); border-left: none;
+  font-size: 11px; color: var(--muted); padding: 2px 5px 2px 2px;
+  border-radius: 0 3px 3px 0; white-space: nowrap; letter-spacing: 0.04em;
+  font-family: 'IBM Plex Mono', monospace;
 }
 #unsaved-badge {
   display: none; align-items: center; gap: 5px;
@@ -1286,11 +1294,14 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
     <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
     Open HTML
   </button>
-  <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:2px;flex:1;min-width:0;overflow:hidden" id="rename-group">
     <div class="tb-file-label" id="file-label">No file loaded</div>
-    <input id="rename-input" type="text" placeholder="Presentation name…">
-    <button id="btn-rename" title="Rename presentation" style="display:none;background:none;border:none;color:var(--dim);cursor:pointer;padding:2px 4px;border-radius:3px;flex-shrink:0;line-height:1" onmouseover="this.style.color='var(--white)'" onmouseout="this.style.color='var(--dim)'">
-      <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <div id="rename-inline" style="display:none;align-items:center;gap:0;min-width:0">
+      <input id="rename-input" type="text" placeholder="name">
+      <span id="rename-ext" style="font-size:11px;color:var(--dim);letter-spacing:0.04em;white-space:nowrap;padding-right:2px">.html</span>
+    </div>
+    <button id="btn-rename" title="Rename presentation" style="display:none;background:none;border:none;color:var(--dim);cursor:pointer;padding:1px 3px;border-radius:3px;flex-shrink:0;line-height:1;opacity:0.6" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+      <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </button>
   </div>
   <div id="unsaved-badge">Unsaved changes</div>
@@ -4532,30 +4543,37 @@ document.getElementById('psm-apply').addEventListener('click', () => {
   const input  = document.getElementById('rename-input');
   if (!btn || !label || !input) return;
 
+  const inline = document.getElementById('rename-inline');
+
   function startRename() {
-    // Show only the base name without .html extension
-    input.value = label.textContent.replace(/\.html$/i, '');
+    const base = label.textContent.replace(/\.html$/i, '');
+    input.value = base;
+    // Size input to content
+    input.style.width = Math.max(40, Math.min(180, base.length * 7 + 16)) + 'px';
     label.style.display = 'none';
     btn.style.display = 'none';
-    input.style.display = 'block';
+    inline.classList.add('active');
     input.focus();
     input.select();
   }
 
   function commitRename() {
     const raw = input.value.trim() || label.textContent.replace(/\.html$/, '');
-    // Strip .html suffix if user typed it — we always append it
     const baseName = raw.replace(/\.html$/i, '').trim() || 'presentation';
     const displayName = baseName + '.html';
     label.textContent = displayName;
-    input.style.display = 'none';
+    inline.classList.remove('active');
     label.style.display = '';
     btn.style.display = 'block';
-    // Update fileName used by downloadHTML
     fileName = displayName;
     document.title = baseName;
     markUnsaved();
   }
+
+  // Resize input as user types
+  input.addEventListener('input', () => {
+    input.style.width = Math.max(40, Math.min(180, input.value.length * 7 + 16)) + 'px';
+  });
 
   btn.addEventListener('click', startRename);
   input.addEventListener('blur', commitRename);
