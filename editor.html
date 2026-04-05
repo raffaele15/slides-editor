@@ -2829,15 +2829,29 @@ function parseShape(sp, opts) {
         }
       }
     }
-    // Detect PPTX bullet: <a:buChar char="..."/> or auto-numbered <a:buAutoNum/>
-    // If present, prepend a dash so renderTextContent renders it as a list item
-    const pPr = p.querySelector('pPr');
+    // Detect PPTX bullet using multiple signals (Google Slides often omits buChar,
+    // inheriting it from layout — detect via marL/indent or explicit buChar/buAutoNum)
+    const pPr = [...p.children].find(c => c.localName === 'pPr');
     if (pPr && line.trim()) {
-      const buChar   = pPr.querySelector('buChar');
-      const buAutoNum = pPr.querySelector('buAutoNum');
-      const buNone   = pPr.querySelector('buNone');
-      if (!buNone && (buChar || buAutoNum)) {
-        line = '- ' + line;
+      const pPrChildren = [...pPr.children].map(c => c.localName);
+      const hasNoBullet = pPrChildren.includes('buNone');
+      const hasExplicitBullet = pPrChildren.includes('buChar') || pPrChildren.includes('buClrTx');
+      const hasAutoNum = pPrChildren.includes('buAutoNum');
+      // marL > 0 with no buNone strongly suggests a bullet/indented list item
+      const marL = parseInt(pPr.getAttribute('marL') || '0');
+      const isBullet = !hasNoBullet && (hasExplicitBullet || hasAutoNum || marL > 0);
+      if (isBullet) {
+        if (hasAutoNum) {
+          const allParas = [...txBody.querySelectorAll('p')];
+          const paraIdx = allParas.indexOf(p);
+          const numBefore = allParas.slice(0, paraIdx).filter(pp => {
+            const pr = [...pp.children].find(c => c.localName === 'pPr');
+            return pr && [...pr.children].some(c => c.localName === 'buAutoNum');
+          }).length;
+          line = (numBefore + 1) + '. ' + line;
+        } else {
+          line = '- ' + line;
+        }
       }
     }
     lines.push(line);
