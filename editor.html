@@ -2810,9 +2810,13 @@ function parseShape(sp, opts) {
   let dominantSize = 0, dominantColor = opts.keepTheme ? '#f0f6ff' : null;
   const lines = [];
 
+  // BULLET_CHARS: Unicode chars Google Slides embeds directly in text runs
+  const BULLET_CHARS = new Set(['●','•','○','▪','▸','▶','◆','◉','⚬','•','●','○','▪','▸','▶','◆','★']);
+  let autoNumCounter = 0;
+
   for (const p of txBody.querySelectorAll('p')) {
     const runs = p.querySelectorAll('r');
-    if (!runs.length) { lines.push(''); continue; }
+    if (!runs.length) { lines.push(''); autoNumCounter = 0; continue; }
     let line = '';
     for (const r of runs) {
       const t = r.querySelector('t');
@@ -2829,31 +2833,38 @@ function parseShape(sp, opts) {
         }
       }
     }
-    // Detect PPTX bullet using multiple signals (Google Slides often omits buChar,
-    // inheriting it from layout — detect via marL/indent or explicit buChar/buAutoNum)
+
+    // ── Bullet detection (multiple strategies) ──
     const pPr = [...p.children].find(c => c.localName === 'pPr');
-    if (pPr && line.trim()) {
-      const pPrChildren = [...pPr.children].map(c => c.localName);
-      const hasNoBullet = pPrChildren.includes('buNone');
-      const hasExplicitBullet = pPrChildren.includes('buChar') || pPrChildren.includes('buClrTx');
-      const hasAutoNum = pPrChildren.includes('buAutoNum');
-      // marL > 0 with no buNone strongly suggests a bullet/indented list item
-      const marL = parseInt(pPr.getAttribute('marL') || '0');
-      const isBullet = !hasNoBullet && (hasExplicitBullet || hasAutoNum || marL > 0);
-      if (isBullet) {
-        if (hasAutoNum) {
-          const allParas = [...txBody.querySelectorAll('p')];
-          const paraIdx = allParas.indexOf(p);
-          const numBefore = allParas.slice(0, paraIdx).filter(pp => {
-            const pr = [...pp.children].find(c => c.localName === 'pPr');
-            return pr && [...pr.children].some(c => c.localName === 'buAutoNum');
-          }).length;
-          line = (numBefore + 1) + '. ' + line;
-        } else {
-          line = '- ' + line;
-        }
-      }
+    const pPrChildren = pPr ? [...pPr.children].map(c => c.localName) : [];
+    const hasNoBullet  = pPrChildren.includes('buNone');
+    const hasAutoNum   = pPrChildren.includes('buAutoNum');
+    const hasExplicit  = pPrChildren.includes('buChar');
+    const marL         = pPr ? parseInt(pPr.getAttribute('marL') || '0') : 0;
+    const indent       = pPr ? parseInt(pPr.getAttribute('indent') || '0') : 0;
+
+    // Strategy 1: text starts with a bullet Unicode char (Google Slides embeds it)
+    const trimmed = line.trimStart();
+    const firstChar = trimmed.charAt(0);
+    if (BULLET_CHARS.has(firstChar)) {
+      line = '- ' + trimmed.slice(1).trimStart();
     }
+    // Strategy 2: explicit XML bullet markers
+    else if (!hasNoBullet && line.trim()) {
+      if (hasAutoNum) {
+        autoNumCounter++;
+        line = autoNumCounter + '. ' + line;
+      } else if (hasExplicit || marL > 228600) {
+        // marL > 228600 EMU (~0.25 inch) = indented = likely a bullet
+        line = '- ' + line;
+        autoNumCounter = 0;
+      } else {
+        autoNumCounter = 0;
+      }
+    } else {
+      autoNumCounter = 0;
+    }
+
     lines.push(line);
   }
 
