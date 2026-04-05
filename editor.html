@@ -2518,6 +2518,7 @@ function createEyebrowElement(cel, idx) {
     pushHistory();
     preview.textContent = cel.content || '';
     preview.contentEditable = 'true';
+    preview.style.whiteSpace = 'pre-wrap';
     preview.focus();
     const range = document.createRange();
     range.selectNodeContents(preview);
@@ -2531,9 +2532,11 @@ function createEyebrowElement(cel, idx) {
       SLIDES[currentSlideIdx].eyebrow = cel.content;
     }
     preview.removeAttribute('contenteditable');
+    preview.style.whiteSpace = '';
     preview.innerHTML = renderTextContent(cel.content || '');
     populateMetaPanel(); markUnsaved();
   });
+  preview.addEventListener('keydown', handleListKeydown);
   initDOMElement(wrapper, idx);
   elementsContainer.appendChild(wrapper);
 }
@@ -2558,6 +2561,7 @@ function createTitleElement(cel, idx) {
     pushHistory();
     preview.textContent = cel.content || '';
     preview.contentEditable = 'true';
+    preview.style.whiteSpace = 'pre-wrap';
     preview.focus();
     const range = document.createRange();
     range.selectNodeContents(preview);
@@ -2571,9 +2575,11 @@ function createTitleElement(cel, idx) {
       SLIDES[currentSlideIdx].title = cel.content;
     }
     preview.removeAttribute('contenteditable');
+    preview.style.whiteSpace = '';
     preview.innerHTML = renderTextContent(cel.content || '');
     populateMetaPanel(); renderSidebar(); markUnsaved();
   });
+  preview.addEventListener('keydown', handleListKeydown);
   initDOMElement(wrapper, idx);
   elementsContainer.appendChild(wrapper);
 }
@@ -3324,6 +3330,46 @@ function ensureArrowMarker(color, idx) {
 //  ELEMENT INTERACTION
 // ════════════════════════════════════════════════════════════════
 
+// ── Shared Enter-key handler for list auto-continuation in any text-box-el ──
+function handleListKeydown(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const tb = e.currentTarget;
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const preRange = document.createRange();
+  try { preRange.setStart(tb, 0); } catch(ex) { preRange.setStartBefore(tb.firstChild || tb); }
+  preRange.setEnd(range.startContainer, range.startOffset);
+  const preClone = document.createElement('div');
+  preClone.appendChild(preRange.cloneContents());
+  preClone.querySelectorAll('div,p').forEach(b => b.prepend(document.createTextNode('\n')));
+  preClone.querySelectorAll('br').forEach(b => b.replaceWith(document.createTextNode('\n')));
+  const textBefore = preClone.textContent.replace(/^\n/, '');
+  const lines = textBefore.split('\n');
+  const currentLine = lines[lines.length - 1];
+  const dashMatch = currentLine.match(/^(\s*[-–•*]\s)/);
+  const numMatch  = currentLine.match(/^(\s*(\d+)([.):\-–])\s)/);
+  let prefix = '';
+  if (dashMatch) {
+    if (currentLine.trim() === dashMatch[1].trim()) {
+      const toDelete = dashMatch[1].length;
+      for (let i = 0; i < toDelete; i++) document.execCommand('delete', false);
+    } else {
+      prefix = dashMatch[1];
+    }
+  } else if (numMatch) {
+    if (currentLine.trim() === numMatch[1].trim()) {
+      const toDelete = numMatch[1].length;
+      for (let i = 0; i < toDelete; i++) document.execCommand('delete', false);
+    } else {
+      const nextNum = parseInt(numMatch[2]) + 1;
+      prefix = currentLine.match(/^\s*/)[0] + nextNum + numMatch[3] + ' ';
+    }
+  }
+  document.execCommand('insertText', false, '\n' + prefix);
+}
+
 function initDOMElement(wrapper, idx) {
   wrapper.addEventListener('mousedown', e => {
     if (e.target.classList.contains('resize-handle') || e.target.classList.contains('crop-handle')) return;
@@ -3390,55 +3436,7 @@ function initDOMElement(wrapper, idx) {
       markUnsaved();
     });
 
-    wrapper.querySelector('.text-box-el').addEventListener('keydown', e => {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      const tb = e.currentTarget;
-
-      // Use getTextWithNewlines to reliably get current content including line structure
-      // then figure out cursor line by counting chars before cursor
-      const sel = window.getSelection();
-      if (!sel.rangeCount) return;
-      const range = sel.getRangeAt(0);
-
-      // Get text before cursor using a range
-      const preRange = document.createRange();
-      try { preRange.setStart(tb, 0); } catch(ex) { preRange.setStartBefore(tb.firstChild || tb); }
-      preRange.setEnd(range.startContainer, range.startOffset);
-      // Walk the preRange to get text with newlines
-      const preClone = document.createElement('div');
-      preClone.appendChild(preRange.cloneContents());
-      preClone.querySelectorAll('div,p').forEach(b => b.prepend(document.createTextNode('\n')));
-      preClone.querySelectorAll('br').forEach(b => b.replaceWith(document.createTextNode('\n')));
-      const textBefore = preClone.textContent.replace(/^\n/, '');
-
-      const lines = textBefore.split('\n');
-      const currentLine = lines[lines.length - 1];
-
-      const dashMatch = currentLine.match(/^(\s*[-–•*]\s)/);
-      const numMatch  = currentLine.match(/^(\s*(\d+)([.):\-–])\s)/);
-
-      let prefix = '';
-      if (dashMatch) {
-        if (currentLine.trim() === dashMatch[1].trim()) {
-          // Empty list item — end the list, delete the prefix
-          const toDelete = dashMatch[1].length;
-          for (let i = 0; i < toDelete; i++) document.execCommand('delete', false);
-        } else {
-          prefix = dashMatch[1];
-        }
-      } else if (numMatch) {
-        if (currentLine.trim() === numMatch[1].trim()) {
-          const toDelete = numMatch[1].length;
-          for (let i = 0; i < toDelete; i++) document.execCommand('delete', false);
-        } else {
-          const nextNum = parseInt(numMatch[2]) + 1;
-          prefix = currentLine.match(/^\s*/)[0] + nextNum + numMatch[3] + ' ';
-        }
-      }
-
-      document.execCommand('insertText', false, '\n' + prefix);
-    });
+    wrapper.querySelector('.text-box-el').addEventListener('keydown', handleListKeydown);
   }
 }
 
