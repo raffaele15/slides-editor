@@ -1388,7 +1388,7 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
     </div>
 
     <!-- CANVAS WRAPPER -->
-    <div id="canvas-wrapper">
+    <div id="canvas-wrapper"><div id="canvas-scroll-spacer" style="position:absolute;pointer-events:none;"></div>
       <div id="stage-scaler">
       <div id="slide-stage">
         <!-- Snap grid overlay -->
@@ -4488,6 +4488,12 @@ function fitStageToWrapper() {
   const wrapper = document.getElementById('canvas-wrapper');
   const scaler  = document.getElementById('stage-scaler');
   if (!wrapper || !scaler) return;
+  // Clear scroll expansion and scroll position BEFORE measuring,
+  // so scrollbars don't reduce clientWidth/Height and cause a wrong fit on first press
+  wrapper.style.minWidth  = '';
+  wrapper.style.minHeight = '';
+  wrapper.scrollLeft = 0;
+  wrapper.scrollTop  = 0;
   const ww = wrapper.clientWidth;
   const wh = wrapper.clientHeight;
   // Fill the wrapper exactly — presentation touches the edges
@@ -4495,19 +4501,20 @@ function fitStageToWrapper() {
   const fit = baseFit * zoomLevel;
   const scaledW = Math.round(960 * fit);
   const scaledH = Math.round(540 * fit);
-  // Center the scaled stage in the wrapper
-  const left = Math.round((ww - scaledW) / 2);
-  const top  = Math.round((wh - scaledH) / 2);
+  const pad = 40;
+  // When smaller than wrapper: center. When larger: start at pad (scroll handles the rest).
+  const left = scaledW <= ww ? Math.round((ww - scaledW) / 2) : pad;
+  const top  = scaledH <= wh ? Math.round((wh - scaledH) / 2) : pad;
   scaler.style.transform = `scale(${fit})`;
   scaler.style.left = left + 'px';
   scaler.style.top  = top  + 'px';
-  // Expand wrapper scroll area when zoomed in
-  wrapper.style.minWidth  = '';
-  wrapper.style.minHeight = '';
   document.getElementById('zoom-val').textContent = Math.round(fit * 100) + '%';
-  // Expand scroll area so zoomed-in stage is fully reachable
-  wrapper.style.minWidth  = scaledW > ww ? scaledW + 'px' : '';
-  wrapper.style.minHeight = scaledH > wh ? scaledH + 'px' : '';
+  // Size spacer so the full zoomed canvas is reachable by scrolling
+  const spacer = document.getElementById('canvas-scroll-spacer');
+  if (spacer) {
+    spacer.style.width  = scaledW > ww ? (scaledW + pad * 2) + 'px' : '';
+    spacer.style.height = scaledH > wh ? (scaledH + pad * 2) + 'px' : '';
+  }
 }
 
 document.getElementById('zoom-in').addEventListener('click', () => { zoomLevel = Math.min(2, zoomLevel + 0.1); applyZoom(); });
