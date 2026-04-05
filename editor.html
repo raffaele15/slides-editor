@@ -2463,8 +2463,12 @@ function saveCurrentCanvas() {
     if (cel.kind === 'text') {
       // content saved in blur handler
     } else if (cel.kind === 'eyebrow' || cel.kind === 'title') {
+      // Only save if actively being edited — otherwise tb.textContent
+      // would read back the rendered HTML as plain text, corrupting lists
       const tb = el.querySelector('.text-box-el');
-      if (tb) { cel.content = tb.textContent; }
+      if (tb && tb.getAttribute('contenteditable') === 'true') {
+        cel.content = getTextWithNewlines(tb);
+      }
     }
   });
 }
