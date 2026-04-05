@@ -2793,14 +2793,20 @@ async function importFromPPTX(presUrl, opts) {
   const presXml = await zip.file('ppt/presentation.xml').async('text');
   const slideCount = (presXml.match(/<p:sldId /g) || []).length;
 
-  const slides = [];
+  // Parse all slides in parallel for speed
+  const slideIndices = [];
   for (let i = 1; i <= slideCount; i++) {
+    if (zip.file(`ppt/slides/slide${i}.xml`)) slideIndices.push(i);
+  }
+
+  const slides = await Promise.all(slideIndices.map(async i => {
     const slideFile = zip.file(`ppt/slides/slide${i}.xml`);
     const relsFile  = zip.file(`ppt/slides/_rels/slide${i}.xml.rels`);
-    if (!slideFile) continue;
 
-    const slideXml = await slideFile.async('text');
-    const relsXml  = relsFile ? await relsFile.async('text') : '';
+    const [slideXml, relsXml] = await Promise.all([
+      slideFile.async('text'),
+      relsFile ? relsFile.async('text') : Promise.resolve('')
+    ]);
 
     // Build rId → media path map
     const relMap = {};
@@ -2808,16 +2814,17 @@ async function importFromPPTX(presUrl, opts) {
       relMap[m[1]] = m[2].startsWith('../') ? 'ppt/' + m[2].slice(3) : m[2];
     }
 
-    const elements = await parseSlideXml(slideXml, relMap, zip, opts);
+    const [elements, notes] = await Promise.all([
+      parseSlideXml(slideXml, relMap, zip, opts),
+      (async () => {
+        if (!opts.importNotes) return '';
+        const notesFile = zip.file(`ppt/notesSlides/notesSlide${i}.xml`);
+        return notesFile ? extractPptxNotes(await notesFile.async('text')) : '';
+      })()
+    ]);
 
-    let notes = '';
-    if (opts.importNotes) {
-      const notesFile = zip.file(`ppt/notesSlides/notesSlide${i}.xml`);
-      if (notesFile) notes = extractPptxNotes(await notesFile.async('text'));
-    }
-
-    slides.push({ elements, notes });
-  }
+    return { elements, notes };
+  }));
   return slides;
 }
 
@@ -2827,7 +2834,8 @@ async function parseSlideXml(xml, relMap, zip, opts) {
   const elements = [];
 
   for (const sp of spTree.querySelectorAll('sp'))  { const e = parseShape(sp, opts);                if (e) elements.push(e); }
-  for (const pic of spTree.querySelectorAll('pic')) { const e = await parsePicture(pic, relMap, zip); if (e) elements.push(e); }
+  const picResults = await Promise.all([...spTree.querySelectorAll('pic')].map(pic => parsePicture(pic, relMap, zip)));
+  for (const e of picResults) { if (e) elements.push(e); }
   for (const cxn of spTree.querySelectorAll('cxnSp')) { const e = parseConnector(cxn);              if (e) elements.push(e); }
 
   return elements;
@@ -2977,10 +2985,10 @@ function pptxSlidesToSlides(pptxSlides, opts) {
     let titleText = '';
 
     elements.forEach(el => {
-      if (el.kind === 'text' && !titleText && el.y < SLIDE_H * 0.35 && el.fontSize >= 18) {
-        titleText = el.content;
-        canvasElements.push({ kind: 'title', x: el.x, y: el.y, w: el.w,
-          fontSize: el.fontSize, color: opts.keepTheme ? '#f0f6ff' : el.color, content: el.content });
+      // Keep all imported elements as plain text boxes — no heuristic title promotion
+      if (el.kind === 'text') {
+        canvasElements.push({ ...el, color: opts.keepTheme ? '#f0f6ff' : el.color });
+        if (!titleText) titleText = el.content;
       } else {
         canvasElements.push(el);
       }
