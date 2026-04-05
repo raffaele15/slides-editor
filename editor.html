@@ -2505,14 +2505,29 @@ function createEyebrowElement(cel, idx) {
   const preview = document.createElement('div');
   preview.className = 'canvas-eyebrow-preview text-box-el';
   preview.style.cssText = `font-size:${cel.fontSize||11}px;color:${cel.color||'#c8a44a'}`;
-  preview.textContent = cel.content || '';
+  preview.innerHTML = renderTextContent(cel.content || '');
   wrapper.appendChild(preview);
   addRevealBadge(wrapper, cel);
-  wrapper.addEventListener('dblclick', e => { e.stopPropagation(); pushHistory(); preview.contentEditable = 'true'; preview.focus(); });
+  wrapper.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    if (preview.getAttribute('contenteditable') === 'true') return;
+    pushHistory();
+    preview.textContent = cel.content || '';
+    preview.contentEditable = 'true';
+    preview.focus();
+    const range = document.createRange();
+    range.selectNodeContents(preview);
+    range.collapse(false);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  });
   preview.addEventListener('blur', () => {
-    preview.contentEditable = 'false';
-    cel.content = preview.textContent;
-    SLIDES[currentSlideIdx].eyebrow = cel.content;
+    if (preview.getAttribute('contenteditable') === 'true') {
+      cel.content = getTextWithNewlines(preview);
+      SLIDES[currentSlideIdx].eyebrow = cel.content;
+    }
+    preview.removeAttribute('contenteditable');
+    preview.innerHTML = renderTextContent(cel.content || '');
     populateMetaPanel(); markUnsaved();
   });
   initDOMElement(wrapper, idx);
@@ -2530,14 +2545,29 @@ function createTitleElement(cel, idx) {
   const preview = document.createElement('div');
   preview.className = 'canvas-title-preview text-box-el';
   preview.style.cssText = `font-size:${cel.fontSize||40}px;color:${cel.color||'#f0f6ff'}`;
-  preview.textContent = cel.content || '';
+  preview.innerHTML = renderTextContent(cel.content || '');
   wrapper.appendChild(preview);
   addRevealBadge(wrapper, cel);
-  wrapper.addEventListener('dblclick', e => { e.stopPropagation(); pushHistory(); preview.contentEditable = 'true'; preview.focus(); });
+  wrapper.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    if (preview.getAttribute('contenteditable') === 'true') return;
+    pushHistory();
+    preview.textContent = cel.content || '';
+    preview.contentEditable = 'true';
+    preview.focus();
+    const range = document.createRange();
+    range.selectNodeContents(preview);
+    range.collapse(false);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  });
   preview.addEventListener('blur', () => {
-    preview.contentEditable = 'false';
-    cel.content = preview.textContent;
-    SLIDES[currentSlideIdx].title = cel.content;
+    if (preview.getAttribute('contenteditable') === 'true') {
+      cel.content = getTextWithNewlines(preview);
+      SLIDES[currentSlideIdx].title = cel.content;
+    }
+    preview.removeAttribute('contenteditable');
+    preview.innerHTML = renderTextContent(cel.content || '');
     populateMetaPanel(); renderSidebar(); markUnsaved();
   });
   initDOMElement(wrapper, idx);
