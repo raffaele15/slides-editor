@@ -360,11 +360,7 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
 #canvas-wrapper {
   flex: 1; overflow: auto;
   background: rgba(2,8,16,0.5);
-  /* Grid centering: stage sits in the middle, scrollable when zoomed large */
-  display: grid;
-  place-items: center;
-  padding: 32px;
-  box-sizing: border-box;
+  position: relative;
 }
 #canvas-wrapper::-webkit-scrollbar { width: 6px; height: 6px; }
 #canvas-wrapper::-webkit-scrollbar-thumb { background: var(--navy-600); border-radius: 3px; }
@@ -372,7 +368,8 @@ input[type="color"] { width: 0; height: 0; opacity: 0; position: absolute; }
 #stage-scaler {
   width: 960px; height: 540px;
   flex-shrink: 0;
-  transform-origin: center center;
+  position: absolute;
+  transform-origin: top left;
 }
 
 #slide-stage {
@@ -4487,16 +4484,29 @@ function fitStageToWrapper() {
   const wrapper = document.getElementById('canvas-wrapper');
   const scaler  = document.getElementById('stage-scaler');
   if (!wrapper || !scaler) return;
-  const pad = 40;
-  const aw = Math.max(1, wrapper.clientWidth  - pad);
-  const ah = Math.max(1, wrapper.clientHeight - pad);
-  const fit = Math.min(aw / 960, ah / 540) * zoomLevel;
-  // scale() from center center; grid centers the 960×540 layout box
+  const pad = 32;
+  const ww = wrapper.clientWidth;
+  const wh = wrapper.clientHeight;
+  // Base scale that fills the wrapper (at zoomLevel=1)
+  const baseFit = Math.min((ww - pad*2) / 960, (wh - pad*2) / 540);
+  const fit = baseFit * zoomLevel;
+  const scaledW = Math.round(960 * fit);
+  const scaledH = Math.round(540 * fit);
+  // Center the scaled stage in the wrapper; allow overflow when zoomed in
+  const left = Math.max(pad, Math.round((ww - scaledW) / 2));
+  const top  = Math.max(pad, Math.round((wh - scaledH) / 2));
   scaler.style.transform = `scale(${fit})`;
+  scaler.style.left = left + 'px';
+  scaler.style.top  = top  + 'px';
+  // Expand wrapper scroll area when zoomed in
+  wrapper.style.minWidth  = '';
+  wrapper.style.minHeight = '';
   document.getElementById('zoom-val').textContent = Math.round(fit * 100) + '%';
-  // Reset scroll so the slide is centered in the wrapper
-  wrapper.scrollLeft = 0;
-  wrapper.scrollTop  = 0;
+  // Expand scroll area so zoomed-in stage is fully reachable
+  const scrollW = scaledW + left * 2;
+  const scrollH = scaledH + top  * 2;
+  wrapper.style.minWidth  = scrollW > ww ? scrollW + 'px' : '';
+  wrapper.style.minHeight = scrollH > wh ? scrollH + 'px' : '';
 }
 
 // Auto-fit on window resize
