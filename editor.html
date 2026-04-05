@@ -314,6 +314,7 @@ body::before {
 /* ── MAIN EDITOR AREA ── */
 #editor-main {
   flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  position: relative;
 }
 
 /* ── TOOL RIBBON ── */
@@ -619,14 +620,6 @@ textarea.meta-input { height: 70px; }
 #empty-state.hidden { display: none; }
 
 /* Hide editor chrome until a presentation is loaded */
-body:not(.loaded) #topbar,
-body:not(.loaded) #sidebar,
-body:not(.loaded) #sidebar-resize,
-body:not(.loaded) #tool-ribbon,
-body:not(.loaded) #editor-timeline,
-body:not(.loaded) #props-panel,
-body:not(.loaded) #props-resize,
-body:not(.loaded) #zoom-ctrl { display: none !important; }
 .es-icon { font-size: 48px; opacity: 0.2; }
 .es-title { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--white); text-align: center; }
 .es-sub { font-size: 11px; color: var(--dim); text-align: center; line-height: 1.7; max-width: 360px; letter-spacing: 0.04em; }
@@ -876,10 +869,11 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
 
 /* ── ZOOM ── */
 #zoom-ctrl {
-  position: absolute; bottom: 12px; right: 12px; z-index: 50;
-  display: flex; align-items: center; gap: 4px;
+  position: absolute; bottom: 16px; right: 16px;
+  z-index: 50; display: flex; align-items: center; gap: 4px;
   background: rgba(4,13,28,0.9); border: 1px solid var(--navy-600);
   border-radius: 20px; padding: 4px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 .zoom-btn {
   background: none; border: none; color: var(--muted); cursor: pointer;
@@ -1215,6 +1209,14 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
 .dm-btn.cancel:hover { background: rgba(255,255,255,0.1); color: var(--white); }
 .dm-btn.ok { background: var(--green); color: #020810; font-weight: 500; }
 .dm-btn.ok:hover { background: #5ddfaa; }
+body:not(.loaded) #topbar,
+body:not(.loaded) #sidebar,
+body:not(.loaded) #sidebar-resize,
+body:not(.loaded) #tool-ribbon,
+body:not(.loaded) #editor-timeline,
+body:not(.loaded) #props-panel,
+body:not(.loaded) #props-resize,
+body:not(.loaded) #zoom-ctrl { display: none !important; }
 </style>
 </head>
 <body>
@@ -1408,15 +1410,15 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
         <div id="drop-zone">Drop image here</div>
       </div><!-- end slide-stage -->
       </div><!-- end stage-scaler -->
-      <!-- Zoom control -->
-      <div id="zoom-ctrl">
-        <button class="zoom-btn" id="zoom-out" title="Zoom out">−</button>
-        <div id="zoom-val">100%</div>
-        <button class="zoom-btn" id="zoom-in" title="Zoom in">+</button>
-        <button class="zoom-btn" id="zoom-fit" title="Fit to window" style="font-size:11px;padding:0 6px">⊡</button>
-      </div>
     </div><!-- end canvas-wrapper -->
 
+  <!-- Zoom control — fixed to bottom-right of editor-main -->
+  <div id="zoom-ctrl">
+    <button class="zoom-btn" id="zoom-out" title="Zoom out">−</button>
+    <div id="zoom-val">100%</div>
+    <button class="zoom-btn" id="zoom-in" title="Zoom in">+</button>
+    <button class="zoom-btn" id="zoom-fit" title="Fit to window" style="font-size:11px;padding:0 6px">⊡</button>
+  </div>
   </div><!-- end editor-main -->
 
   <!-- RIGHT PANEL RESIZE HANDLE -->
@@ -1867,6 +1869,7 @@ function loadHTML(src) {
     renderTimeline();
     initTreeDrag();
     selectSlide(0);
+    setTimeout(fitStageToWrapper, 50);
     // Switch to Text tab on load so the fields are immediately visible
     switchToTab('text');
     showToast('Loaded ' + SLIDES.length + ' slides', true);
@@ -3052,6 +3055,7 @@ document.getElementById('pam-apply').addEventListener('click', () => {
   renderSidebar(); renderTimeline();
   selectSlide(0); initTreeDrag();
   markUnsaved();
+  setTimeout(fitStageToWrapper, 50);
   showToast('Imported ' + SLIDES.length + ' slides across ' + groups.length + ' phases', true);
 });
 
@@ -4484,17 +4488,16 @@ function fitStageToWrapper() {
   const wrapper = document.getElementById('canvas-wrapper');
   const scaler  = document.getElementById('stage-scaler');
   if (!wrapper || !scaler) return;
-  const pad = 32;
   const ww = wrapper.clientWidth;
   const wh = wrapper.clientHeight;
-  // Base scale that fills the wrapper (at zoomLevel=1)
-  const baseFit = Math.min((ww - pad*2) / 960, (wh - pad*2) / 540);
+  // Fill the wrapper exactly — presentation touches the edges
+  const baseFit = Math.min(ww / 960, wh / 540);
   const fit = baseFit * zoomLevel;
   const scaledW = Math.round(960 * fit);
   const scaledH = Math.round(540 * fit);
-  // Center the scaled stage in the wrapper; allow overflow when zoomed in
-  const left = Math.max(pad, Math.round((ww - scaledW) / 2));
-  const top  = Math.max(pad, Math.round((wh - scaledH) / 2));
+  // Center the scaled stage in the wrapper
+  const left = Math.round((ww - scaledW) / 2);
+  const top  = Math.round((wh - scaledH) / 2);
   scaler.style.transform = `scale(${fit})`;
   scaler.style.left = left + 'px';
   scaler.style.top  = top  + 'px';
@@ -4503,15 +4506,9 @@ function fitStageToWrapper() {
   wrapper.style.minHeight = '';
   document.getElementById('zoom-val').textContent = Math.round(fit * 100) + '%';
   // Expand scroll area so zoomed-in stage is fully reachable
-  const scrollW = scaledW + left * 2;
-  const scrollH = scaledH + top  * 2;
-  wrapper.style.minWidth  = scrollW > ww ? scrollW + 'px' : '';
-  wrapper.style.minHeight = scrollH > wh ? scrollH + 'px' : '';
+  wrapper.style.minWidth  = scaledW > ww ? scaledW + 'px' : '';
+  wrapper.style.minHeight = scaledH > wh ? scaledH + 'px' : '';
 }
-
-// Auto-fit on window resize
-const _stageResizeObserver = new ResizeObserver(() => fitStageToWrapper());
-_stageResizeObserver.observe(document.getElementById('canvas-wrapper'));
 
 document.getElementById('zoom-in').addEventListener('click', () => { zoomLevel = Math.min(2, zoomLevel + 0.1); applyZoom(); });
 document.getElementById('zoom-out').addEventListener('click', () => { zoomLevel = Math.max(0.3, zoomLevel - 0.1); applyZoom(); });
@@ -5056,6 +5053,7 @@ function createNewPresentation() {
   switchToTab('text');
   pushHistory();
   markUnsaved();
+  setTimeout(fitStageToWrapper, 50);
   showToast('Created "' + title + '" — ' + newSlides.length + ' slides', true);
 }
 
@@ -5260,5 +5258,6 @@ function blendHex(hex1, hex2, t) {
 setTool('select');
 setTimeout(fitStageToWrapper, 50);
 </script>
+
 </body>
 </html>
