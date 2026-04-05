@@ -3322,7 +3322,10 @@ function initDOMElement(wrapper, idx) {
     wrapper.querySelector('.text-box-el').addEventListener('blur', () => {
       const tb = wrapper.querySelector('.text-box-el');
       const cel = SLIDES[currentSlideIdx].canvasElements[idx];
-      if (cel) cel.content = getTextWithNewlines(tb);
+      // Only save content if actually in edit mode (not just focus/click)
+      if (tb.getAttribute('contenteditable') === 'true') {
+        if (cel) cel.content = getTextWithNewlines(tb);
+      }
       tb.removeAttribute('contenteditable');
       tb.innerHTML = renderTextContent(cel ? cel.content : '');
       markUnsaved();
