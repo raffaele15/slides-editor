@@ -1286,7 +1286,7 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
    MOBILE LAYOUT (≤768px)
    Canvas fills screen; panels are sheets/drawers on demand
    ════════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
+@media (max-width: 768px) and (pointer: coarse) {
 
   /* ── Hide desktop chrome ── */
   #topbar, #sidebar, #sidebar-resize,
@@ -1447,7 +1447,7 @@ body:not(.loaded) #zoom-ctrl { display: none !important; }
 }
 
 /* Desktop: hide mobile elements */
-@media (min-width: 769px) {
+@media not ((max-width: 768px) and (pointer: coarse)) {
   #mob-topbar, #mob-bottombar,
   #mob-slides-sheet, #mob-props-sheet, #mob-settings-sheet,
   #mob-backdrop { display: none !important; }
@@ -6126,12 +6126,12 @@ function ggApplyEditorTheme() {
 function ggBindSettings() {
   const bindSlider = (slId, svId, fn, isFloat) => {
     const sl=document.getElementById(slId), sv=document.getElementById(svId);
-    if (!sl||!sv) { console.warn('[GG] missing element:', slId, svId); return; }
+    if (!sl||!sv) return;
     const parse = isFloat ? parseFloat : parseInt;
     sl.addEventListener('input', e => { const v=parse(e.target.value); fn(v); sv.value=v; });
     sv.addEventListener('input', e => { const v=parse(e.target.value); fn(v); sl.value=v; });
   };
-  console.log('[GG] ggBindSettings running, gg-sl-str:', !!document.getElementById('gg-sl-str'));
+
   bindSlider('gg-sl-str',  'gg-sv-str',  v=>GG_CONFIG.strength=v);
   bindSlider('gg-sl-rad',  'gg-sv-rad',  v=>GG_CONFIG.warpRadius=v);
   bindSlider('gg-sl-grid', 'gg-sv-grid', v=>GG_CONFIG.gridSpacing=v);
