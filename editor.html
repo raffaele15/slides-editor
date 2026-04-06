@@ -1928,6 +1928,7 @@ function loadHTML(src) {
     currentSlideIdx = 0;
     document.getElementById('empty-state').classList.add('hidden');
     document.body.classList.add('loaded');
+  setTimeout(() => { ggInit(); if (GG_CONFIG.enabled) ggApplyEditorTheme(); }, 100);
     document.getElementById('file-label').textContent = fileName;
     document.getElementById('file-label').classList.add('loaded');
   document.getElementById('btn-rename').style.display = 'block';
@@ -3198,6 +3199,7 @@ document.getElementById('pam-apply').addEventListener('click', () => {
   // Load into editor
   document.getElementById('phase-assign-modal').classList.remove('open');
   document.body.classList.add('loaded');
+  setTimeout(() => { ggInit(); if (GG_CONFIG.enabled) ggApplyEditorTheme(); }, 100);
   SLIDES = _gsImportedSlides;
   SLIDES.forEach(s => { if (!s.canvasElements) s.canvasElements = []; });
   elementsContainer.innerHTML = '';
@@ -5440,6 +5442,7 @@ function createNewPresentation() {
   fileName = title.replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.html';
   document.getElementById('empty-state').classList.add('hidden');
   document.body.classList.add('loaded');
+  setTimeout(() => { ggInit(); if (GG_CONFIG.enabled) ggApplyEditorTheme(); }, 100);
   document.getElementById('file-label').textContent = fileName;
   document.getElementById('file-label').classList.add('loaded');
   document.getElementById('btn-rename').style.display = 'block';
@@ -5836,7 +5839,7 @@ function ggDrawGrid(els) {
 }
 
 function ggTick(time) {
-  if (!GG_CONFIG.enabled) {
+  if (!GG_CONFIG.enabled || !document.body.classList.contains('loaded')) {
     if (_ggBgCtx) _ggBgCtx.clearRect(0,0,960,540);
     if (_ggGridCtx) _ggGridCtx.clearRect(0,0,960,540);
   } else {
@@ -5869,8 +5872,11 @@ function ggApplyEditorTheme() {
   if (!GG_CONFIG.enabled) return;
   const bg = GG_CONFIG.bgColor || GG_THEMES[GG_CONFIG.theme].bg;
   document.body.style.background = bg;
-  const topbar = document.getElementById('topbar');
-  if (topbar) topbar.style.background = bg + 'f8';
+  // Apply to topbar, timeline, sidebar header
+  ['topbar','editor-timeline','sidebar-header'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.background = bg;
+  });
 }
 
 function ggBindSettings() {
@@ -5913,8 +5919,10 @@ function ggBindSettings() {
       ggApplyEditorTheme();
     } else {
       document.body.style.background = '';
-      const topbar = document.getElementById('topbar');
-      if (topbar) topbar.style.background = '';
+      ['topbar','editor-timeline','sidebar-header'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.background = '';
+      });
     }
   });
   const bgSwatch=document.getElementById('gg-bg-swatch'), bgColor=document.getElementById('gg-bg-color'), bgHex=document.getElementById('gg-bg-hex');
