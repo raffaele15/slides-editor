@@ -1281,6 +1281,178 @@ body:not(.loaded) #editor-timeline,
 body:not(.loaded) #props-panel,
 body:not(.loaded) #props-resize,
 body:not(.loaded) #zoom-ctrl { display: none !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   MOBILE LAYOUT (≤768px)
+   Canvas fills screen; panels are sheets/drawers on demand
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Hide desktop chrome ── */
+  #topbar, #sidebar, #sidebar-resize,
+  #tool-ribbon, #editor-timeline,
+  #props-panel, #props-resize,
+  #zoom-ctrl,
+  .el-actions, .el-border,
+  .resize-handle, .reveal-badge,
+  #snap-grid-overlay, .snap-line { display: none !important; }
+
+  body { overflow: hidden; }
+  #app { flex-direction: column; height: 100dvh; overflow: hidden; }
+
+  /* ── Canvas area fills everything ── */
+  #editor-main {
+    display: flex !important; flex: 1;
+    flex-direction: column; overflow: hidden;
+    padding: 0 !important;
+  }
+  #canvas-wrapper {
+    flex: 1; overflow: hidden !important;
+    width: 100vw !important; height: 100% !important;
+  }
+
+  /* ── Mobile top bar ── */
+  #mob-topbar {
+    display: flex !important;
+    align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: rgba(4,13,28,0.92);
+    border-bottom: 1px solid var(--navy-600);
+    backdrop-filter: blur(8px);
+    z-index: 800; flex-shrink: 0;
+  }
+  #mob-pres-name {
+    flex: 1; font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--blue-200);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mob-topbtn {
+    background: none; border: none; color: var(--dim);
+    font-size: 16px; padding: 4px 6px; cursor: pointer;
+    border-radius: 6px; flex-shrink: 0; line-height: 1;
+  }
+  .mob-topbtn:active { background: rgba(37,88,168,0.3); color: var(--white); }
+
+  /* ── Mobile bottom bar ── */
+  #mob-bottombar {
+    display: flex !important;
+    align-items: center;
+    background: rgba(4,13,28,0.96);
+    border-top: 1px solid var(--navy-600);
+    backdrop-filter: blur(8px);
+    z-index: 800; flex-shrink: 0;
+    padding: 0;
+  }
+  .mob-navbtn {
+    background: none; border: none; color: var(--muted);
+    font-size: 22px; width: 52px; height: 52px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: color 0.15s;
+  }
+  .mob-navbtn:active { color: var(--white); background: rgba(37,88,168,0.2); }
+  #mob-slide-info {
+    flex: 1; text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  #mob-slide-num { font-size: 9px; color: var(--gold); letter-spacing: 0.12em; }
+  #mob-slide-title { font-size: 10px; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; margin: 0 auto; }
+  .mob-actionbtn {
+    background: none; border: none; color: var(--dim);
+    width: 52px; height: 52px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; flex-shrink: 0; transition: color 0.15s;
+  }
+  .mob-actionbtn:active { color: var(--white); background: rgba(37,88,168,0.2); }
+  .mob-actionbtn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .mob-actionbtn span { font-size: 7px; letter-spacing: 0.06em; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Shared sheet/drawer styles ── */
+  .mob-sheet {
+    position: fixed; z-index: 900;
+    background: rgba(4,13,28,0.98);
+    backdrop-filter: blur(12px);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    pointer-events: none;
+  }
+  .mob-sheet.open { transform: translateY(0) translateX(0) !important; pointer-events: all; }
+  .mob-sheet-handle {
+    width: 36px; height: 4px; background: var(--navy-600);
+    border-radius: 2px; margin: 10px auto 0;
+  }
+  .mob-sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--navy-700);
+  }
+  .mob-sheet-title { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+  .mob-sheet-close { background: none; border: none; color: var(--dim); font-size: 18px; cursor: pointer; padding: 2px 6px; line-height: 1; }
+  .mob-sheet-close:active { color: var(--white); }
+
+  /* ── Slides sheet (bottom) ── */
+  #mob-slides-sheet {
+    left: 0; right: 0; bottom: 0;
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid var(--navy-600);
+    max-height: 75dvh; display: flex; flex-direction: column;
+    transform: translateY(100%);
+  }
+  #mob-slides-list { flex: 1; overflow-y: auto; padding: 8px 12px 16px; }
+  .mob-slide-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 10px; border-radius: 8px; margin-bottom: 4px;
+    border: 1px solid transparent; cursor: pointer;
+    transition: all 0.12s;
+  }
+  .mob-slide-item.active { background: rgba(37,88,168,0.2); border-color: var(--blue-400); }
+  .mob-slide-item:active { background: rgba(37,88,168,0.15); }
+  .mob-slide-num { font-size: 9px; color: var(--gold); font-family: 'IBM Plex Mono', monospace; min-width: 24px; }
+  .mob-slide-text { flex: 1; min-width: 0; }
+  .mob-slide-ttl { font-size: 12px; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mob-slide-phase { font-size: 9px; color: var(--dim); margin-top: 2px; }
+
+  /* ── Properties sheet (right drawer) ── */
+  #mob-props-sheet {
+    top: 0; right: 0; bottom: 0;
+    width: min(320px, 90vw);
+    border-left: 1px solid var(--navy-600);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    overflow-y: auto;
+  }
+  #mob-props-sheet .rp-tabs { display: flex; flex-shrink: 0; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--navy-700); }
+  #mob-props-sheet .rp-tabs::-webkit-scrollbar { display: none; }
+  #mob-props-sheet .rp-tab { flex: 1; min-width: max-content; padding: 10px 12px; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; font-family: 'IBM Plex Mono', monospace; }
+  #mob-props-sheet .rp-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  #mob-props-content { flex: 1; overflow-y: auto; }
+
+  /* ── Settings sheet (right drawer) ── */
+  #mob-settings-sheet {
+    top: 0; right: 0; bottom: 0;
+    width: min(320px, 90vw);
+    border-left: 1px solid var(--navy-600);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+  }
+  #mob-settings-content { flex: 1; overflow-y: auto; }
+
+  /* ── Backdrop ── */
+  #mob-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 890;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(2px);
+  }
+  #mob-backdrop.open { display: block; }
+
+  /* ── Mobile canvas element interaction ── */
+  .canvas-element { cursor: default; }
+  .canvas-element.selected .el-border { display: block !important; border: 2px solid var(--green) !important; }
+}
+
+/* Desktop: hide mobile elements */
+@media (min-width: 769px) {
+  #mob-topbar, #mob-bottombar,
+  #mob-slides-sheet, #mob-props-sheet, #mob-settings-sheet,
+  #mob-backdrop { display: none !important; }
+}
+
 </style>
 </head>
 <body>
@@ -2460,7 +2632,11 @@ function selectSlide(idx) {
   switchToTab('props');
   // Apply per-slide background on the editor stage
   const slideBg = SLIDES[currentSlideIdx] && SLIDES[currentSlideIdx].slideBg;
-  document.getElementById('slide-stage').style.background = slideBg || '';
+  // When gravity grid is active, keep stage transparent so canvas shows through
+  const stageBg = (typeof GG_CONFIG !== 'undefined' && GG_CONFIG.enabled)
+    ? (slideBg || 'transparent')
+    : (slideBg || '');
+  document.getElementById('slide-stage').style.background = stageBg;
   loadSlideBackground();
   const activeThumb = document.querySelector('.slide-thumb.active');
   if (activeThumb) activeThumb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -5935,7 +6111,336 @@ function ggBindSettings() {
   bgSwatch?.addEventListener('click', ()=>bgColor?.click());
 }
 
+
+// ── MOBILE NAV ──
+(function() {
+  function isMobile() { return window.innerWidth <= 768; }
+
+  function updateMobileNav() {
+    if (!isMobile()) return;
+    const title = document.getElementById('mobile-nav-title');
+    const idx   = document.getElementById('mobile-nav-idx');
+    if (!SLIDES.length) return;
+    const s = SLIDES[currentSlideIdx];
+    if (title) title.textContent = s.title || s.eyebrow || 'Slide ' + (currentSlideIdx+1);
+    if (idx)   idx.textContent   = (currentSlideIdx+1) + ' / ' + SLIDES.length;
+  }
+
+  function mobileFitStage() {
+    if (!isMobile()) return;
+    const scaler = document.getElementById('stage-scaler');
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (!scaler || !wrapper) return;
+    const navH = 72; // mobile nav bar height
+    const aw = window.innerWidth;
+    const ah = window.innerHeight - navH;
+    const fit = Math.min(aw / 960, ah / 540);
+    const scaledW = 960 * fit;
+    const scaledH = 540 * fit;
+    const left = Math.floor((aw - scaledW) / 2);
+    const top  = Math.floor((ah - scaledH) / 2);
+    scaler.style.transform = `scale(${fit})`;
+    scaler.style.transformOrigin = 'top left';
+    scaler.style.left = left + 'px';
+    scaler.style.top  = top + 'px';
+    wrapper.style.height = ah + 'px';
+    wrapper.style.paddingBottom = navH + 'px';
+  }
+
+  document.getElementById('mobile-nav-prev')?.addEventListener('click', () => {
+    if (currentSlideIdx > 0) { selectSlide(currentSlideIdx - 1); updateMobileNav(); }
+  });
+  document.getElementById('mobile-nav-next')?.addEventListener('click', () => {
+    if (currentSlideIdx < SLIDES.length - 1) { selectSlide(currentSlideIdx + 1); updateMobileNav(); }
+  });
+
+  // Hook into selectSlide
+  const _origSelectSlide = selectSlide;
+  selectSlide = function(idx) {
+    _origSelectSlide(idx);
+    setTimeout(() => { updateMobileNav(); mobileFitStage(); }, 50);
+  };
+
+  window.addEventListener('resize', mobileFitStage);
+  // Run after load
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => { if (isMobile()) { mobileFitStage(); updateMobileNav(); } }, 200);
+  });
+})();
+
+
+// ════════════════════════════════════════════════════════════════
+//  MOBILE UI
+// ════════════════════════════════════════════════════════════════
+(function() {
+  function isMob() { return window.innerWidth <= 768; }
+
+  // ── Fit stage to mobile screen ──
+  function mobFit() {
+    if (!isMob()) return;
+    const scaler  = document.getElementById('stage-scaler');
+    const wrapper = document.getElementById('canvas-wrapper');
+    if (!scaler || !wrapper) return;
+    const topH = document.getElementById('mob-topbar')?.offsetHeight || 44;
+    const botH = document.getElementById('mob-bottombar')?.offsetHeight || 52;
+    const aw = window.innerWidth;
+    const ah = window.innerHeight - topH - botH;
+    const fit = Math.min(aw / 960, ah / 540);
+    const left = Math.floor((aw - 960 * fit) / 2);
+    const top  = Math.floor((ah - 540 * fit) / 2);
+    scaler.style.transform = `scale(${fit})`;
+    scaler.style.transformOrigin = 'top left';
+    scaler.style.left = left + 'px';
+    scaler.style.top  = top + 'px';
+    wrapper.style.height = ah + 'px';
+    // Update gravity grid canvases
+    if (typeof ggInit === 'function') ggInit();
+  }
+  window.addEventListener('resize', mobFit);
+
+  // ── Update bottom bar info ──
+  function mobUpdateInfo() {
+    if (!isMob() || !SLIDES.length) return;
+    const s = SLIDES[currentSlideIdx];
+    const numEl   = document.getElementById('mob-slide-num');
+    const titleEl = document.getElementById('mob-slide-title');
+    const nameEl  = document.getElementById('mob-pres-name');
+    if (numEl)   numEl.textContent   = String(currentSlideIdx+1).padStart(2,'0') + ' / ' + SLIDES.length;
+    if (titleEl) titleEl.textContent = s.title || s.eyebrow || 'Slide '+(currentSlideIdx+1);
+    if (nameEl)  nameEl.textContent  = document.getElementById('file-label')?.textContent || 'Presentation';
+  }
+
+  // ── Sheet open/close ──
+  function openSheet(id) {
+    closeAllSheets();
+    document.getElementById(id)?.classList.add('open');
+    document.getElementById('mob-backdrop')?.classList.add('open');
+    // Populate on open
+    if (id === 'mob-slides-sheet') mobPopulateSlides();
+    if (id === 'mob-props-sheet')  mobPopulateProps();
+    if (id === 'mob-settings-sheet') mobPopulateSettings();
+  }
+  function closeAllSheets() {
+    ['mob-slides-sheet','mob-props-sheet','mob-settings-sheet'].forEach(id =>
+      document.getElementById(id)?.classList.remove('open'));
+    document.getElementById('mob-backdrop')?.classList.remove('open');
+  }
+
+  document.getElementById('mob-backdrop')?.addEventListener('click', closeAllSheets);
+  document.getElementById('mob-close-slides')?.addEventListener('click', closeAllSheets);
+  document.getElementById('mob-close-props')?.addEventListener('click', closeAllSheets);
+  document.getElementById('mob-close-settings')?.addEventListener('click', closeAllSheets);
+
+  // ── Bottom bar buttons ──
+  document.getElementById('mob-prev')?.addEventListener('click', () => {
+    if (currentSlideIdx > 0) selectSlide(currentSlideIdx - 1);
+  });
+  document.getElementById('mob-next')?.addEventListener('click', () => {
+    if (currentSlideIdx < SLIDES.length - 1) selectSlide(currentSlideIdx + 1);
+  });
+  document.getElementById('mob-btn-slides')?.addEventListener('click',   () => openSheet('mob-slides-sheet'));
+  document.getElementById('mob-btn-props')?.addEventListener('click',    () => openSheet('mob-props-sheet'));
+  document.getElementById('mob-btn-settings')?.addEventListener('click', () => openSheet('mob-settings-sheet'));
+
+  // ── Top bar buttons ──
+  document.getElementById('mob-btn-notes')?.addEventListener('click', () => {
+    document.getElementById('btn-notes-toggle')?.click();
+  });
+  document.getElementById('mob-btn-undo')?.addEventListener('click', () => {
+    document.getElementById('btn-undo')?.click();
+  });
+  document.getElementById('mob-btn-download')?.addEventListener('click', () => {
+    downloadHTML();
+  });
+
+  // ── Props tab switching ──
+  document.querySelectorAll('#mob-props-tabs .rp-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#mob-props-tabs .rp-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      mobPopulateProps();
+    });
+  });
+
+  // ── Slides list ──
+  function mobPopulateSlides() {
+    const el = document.getElementById('mob-slides-list');
+    if (!el || !SLIDES.length) return;
+    el.innerHTML = SLIDES.map((s, i) => `
+      <div class="mob-slide-item ${i===currentSlideIdx?'active':''}" data-idx="${i}">
+        <div class="mob-slide-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="mob-slide-text">
+          <div class="mob-slide-ttl">${(s.title||s.eyebrow||'—').replace(/</g,'&lt;').slice(0,50)}</div>
+          <div class="mob-slide-phase">${s.phaseName||''}</div>
+        </div>
+      </div>
+    `).join('');
+    el.querySelectorAll('.mob-slide-item').forEach(item => {
+      item.addEventListener('click', () => {
+        selectSlide(parseInt(item.dataset.idx));
+        closeAllSheets();
+      });
+    });
+  }
+
+  // ── Properties panel ──
+  function mobPopulateProps() {
+    const el = document.getElementById('mob-props-form');
+    if (!el) return;
+    const activeTab = document.querySelector('#mob-props-tabs .rp-tab.active')?.dataset.tab;
+    if (activeTab === 'anim') {
+      // Mirror anim pane
+      el.innerHTML = document.getElementById('anim-form')?.innerHTML ||
+        '<p style="color:var(--dim);font-size:11px;padding:10px">Select an element first</p>';
+    } else {
+      // Mirror props form
+      el.innerHTML = document.getElementById('props-form')?.innerHTML ||
+        '<p style="color:var(--dim);font-size:11px;padding:10px">Select an element first</p>';
+    }
+    // Re-bind inputs to mirror the desktop panel
+    el.querySelectorAll('input, select').forEach(inp => {
+      const desktopEl = document.getElementById(inp.id);
+      if (desktopEl) {
+        inp.addEventListener('input', e => {
+          desktopEl.value = e.target.value;
+          desktopEl.dispatchEvent(new Event('input', {bubbles:true}));
+        });
+        inp.addEventListener('change', e => {
+          desktopEl.value = e.target.value;
+          desktopEl.dispatchEvent(new Event('change', {bubbles:true}));
+        });
+      }
+    });
+  }
+
+  // ── Settings panel ──
+  function mobPopulateSettings() {
+    const el = document.getElementById('mob-settings-content');
+    if (!el) return;
+    // Clone the settings pane content
+    const desktop = document.getElementById('sg-body');
+    if (desktop) el.innerHTML = desktop.innerHTML;
+    // Re-bind all inputs
+    el.querySelectorAll('input, select, button').forEach(inp => {
+      const desktopEl = document.getElementById(inp.id);
+      if (!desktopEl) return;
+      if (inp.tagName === 'BUTTON') {
+        inp.addEventListener('click', () => desktopEl.click());
+      } else {
+        inp.addEventListener('input', e => {
+          desktopEl.value = e.target.value;
+          desktopEl.dispatchEvent(new Event('input', {bubbles:true}));
+        });
+        inp.addEventListener('change', e => {
+          desktopEl.checked = e.target.checked;
+          desktopEl.value = e.target.value;
+          desktopEl.dispatchEvent(new Event('change', {bubbles:true}));
+          desktopEl.dispatchEvent(new Event('input', {bubbles:true}));
+        });
+      }
+    });
+  }
+
+  // ── Hook selectSlide to update mobile info ──
+  const _origSel = window.selectSlide;
+  if (_origSel) {
+    window.selectSlide = function(idx) {
+      _origSel(idx);
+      setTimeout(() => { mobUpdateInfo(); mobFit(); }, 60);
+    };
+  }
+
+  // ── Init on load ──
+  function mobInit() {
+    if (!isMob()) return;
+    mobFit();
+    mobUpdateInfo();
+    // Force body loaded class visibility
+    document.body.classList.add('loaded');
+  }
+
+  // Run when presentation loads
+  const _origFileLoad = window._mobOrigLoad;
+  document.addEventListener('mob-loaded', mobInit);
+  setTimeout(mobInit, 300);
+  window.addEventListener('resize', () => { if (isMob()) { mobFit(); mobUpdateInfo(); } });
+
+})();
+
 </script>
+
+
+
+<!-- ══════════════════════════════════════════════
+     MOBILE UI
+     ══════════════════════════════════════════════ -->
+
+<!-- Backdrop -->
+<div id="mob-backdrop"></div>
+
+<!-- Top bar -->
+<div id="mob-topbar">
+  <div id="mob-pres-name">No file loaded</div>
+  <button class="mob-topbtn" id="mob-btn-notes" title="Notes">📝</button>
+  <button class="mob-topbtn" id="mob-btn-undo" title="Undo">↩</button>
+  <button class="mob-topbtn" id="mob-btn-download" title="Download">⬇</button>
+</div>
+
+<!-- Bottom bar -->
+<div id="mob-bottombar">
+  <button class="mob-navbtn" id="mob-prev">‹</button>
+  <div id="mob-slide-info">
+    <div id="mob-slide-num">—</div>
+    <div id="mob-slide-title">—</div>
+  </div>
+  <button class="mob-navbtn" id="mob-next">›</button>
+  <button class="mob-actionbtn" id="mob-btn-slides">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="5" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="3" y="11" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="5" rx="1"/><rect x="3" y="19" width="7" height="2" rx="1"/><rect x="14" y="19" width="7" height="2" rx="1"/></svg>
+    <span>Slides</span>
+  </button>
+  <button class="mob-actionbtn" id="mob-btn-props">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    <span>Props</span>
+  </button>
+  <button class="mob-actionbtn" id="mob-btn-settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span>Settings</span>
+  </button>
+</div>
+
+<!-- Slides sheet (bottom) -->
+<div class="mob-sheet" id="mob-slides-sheet">
+  <div class="mob-sheet-handle"></div>
+  <div class="mob-sheet-head">
+    <span class="mob-sheet-title">Slides</span>
+    <button class="mob-sheet-close" id="mob-close-slides">✕</button>
+  </div>
+  <div id="mob-slides-list"></div>
+</div>
+
+<!-- Properties sheet (right) -->
+<div class="mob-sheet" id="mob-props-sheet">
+  <div class="mob-sheet-head">
+    <span class="mob-sheet-title">Properties</span>
+    <button class="mob-sheet-close" id="mob-close-props">✕</button>
+  </div>
+  <div class="rp-tabs" id="mob-props-tabs">
+    <button class="rp-tab active" data-tab="props">Properties</button>
+    <button class="rp-tab" data-tab="anim">Animation</button>
+  </div>
+  <div id="mob-props-content">
+    <div id="mob-props-form" style="padding:10px"></div>
+  </div>
+</div>
+
+<!-- Settings sheet (right) -->
+<div class="mob-sheet" id="mob-settings-sheet">
+  <div class="mob-sheet-head">
+    <span class="mob-sheet-title">Settings</span>
+    <button class="mob-sheet-close" id="mob-close-settings">✕</button>
+  </div>
+  <div id="mob-settings-content"></div>
+</div>
 
 </body>
 </html>
