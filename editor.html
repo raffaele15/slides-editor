@@ -2173,7 +2173,6 @@ function loadHTML(src) {
     currentSlideIdx = 0;
     document.getElementById('empty-state').classList.add('hidden');
     document.body.classList.add('loaded');
-  setTimeout(() => { ggInit(); if (GG_CONFIG.enabled) ggApplyEditorTheme(); }, 100);
     document.getElementById('file-label').textContent = fileName;
     document.getElementById('file-label').classList.add('loaded');
   document.getElementById('btn-rename').style.display = 'block';
@@ -3448,7 +3447,6 @@ document.getElementById('pam-apply').addEventListener('click', () => {
   // Load into editor
   document.getElementById('phase-assign-modal').classList.remove('open');
   document.body.classList.add('loaded');
-  setTimeout(() => { ggInit(); if (GG_CONFIG.enabled) ggApplyEditorTheme(); }, 100);
   SLIDES = _gsImportedSlides;
   SLIDES.forEach(s => { if (!s.canvasElements) s.canvasElements = []; });
   elementsContainer.innerHTML = '';
@@ -5691,7 +5689,6 @@ function createNewPresentation() {
   fileName = title.replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.html';
   document.getElementById('empty-state').classList.add('hidden');
   document.body.classList.add('loaded');
-  setTimeout(() => { ggInit(); if (GG_CONFIG.enabled) ggApplyEditorTheme(); }, 100);
   document.getElementById('file-label').textContent = fileName;
   document.getElementById('file-label').classList.add('loaded');
   document.getElementById('btn-rename').style.display = 'block';
@@ -6129,11 +6126,12 @@ function ggApplyEditorTheme() {
 function ggBindSettings() {
   const bindSlider = (slId, svId, fn, isFloat) => {
     const sl=document.getElementById(slId), sv=document.getElementById(svId);
-    if (!sl||!sv) return;
+    if (!sl||!sv) { console.warn('[GG] missing element:', slId, svId); return; }
     const parse = isFloat ? parseFloat : parseInt;
     sl.addEventListener('input', e => { const v=parse(e.target.value); fn(v); sv.value=v; });
     sv.addEventListener('input', e => { const v=parse(e.target.value); fn(v); sl.value=v; });
   };
+  console.log('[GG] ggBindSettings running, gg-sl-str:', !!document.getElementById('gg-sl-str'));
   bindSlider('gg-sl-str',  'gg-sv-str',  v=>GG_CONFIG.strength=v);
   bindSlider('gg-sl-rad',  'gg-sv-rad',  v=>GG_CONFIG.warpRadius=v);
   bindSlider('gg-sl-grid', 'gg-sv-grid', v=>GG_CONFIG.gridSpacing=v);
